@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  AI_PROVIDER: mock
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Check types
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test
+      - name: Production build without runtime secrets
+        run: npm run build
+
+  postgres:
+    name: PostgreSQL integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: quizquiz
+          POSTGRES_DB: quizquiz
+          # Disposable CI service credential, never used by a deployed database.
+          POSTGRES_PASSWORD: ci-only-quizquiz
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U quizquiz -d quizquiz"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://quizquiz:ci-only-quizquiz@127.0.0.1:5433/quizquiz
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Test migrations, persistence, authentication and ownership
+        run: npm run test:db
+
+  docker:
+    name: Docker smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Generate disposable local settings
+        run: node scripts/db-env.mjs
+      - name: Build and start app, migrations and database
+        run: docker compose --env-file .env.local --profile app up --build -d --wait --wait-timeout 120
+      - name: Verify database readiness and rendered signup page
+        run: |
+          curl --fail --silent --show-error --max-time 30 http://127.0.0.1:3001/api/health/ready
+          curl --fail --silent --show-error --max-time 30 --output /dev/null http://127.0.0.1:3001/signup
+      - name: Show service logs on failure
+        if: failure()
+        run: docker compose --env-file .env.local --profile app logs --no-color --tail 150
+      - name: Remove disposable CI containers and data
+        if: always()
+        run: |
+          if [ -f .env.local ]; then
+            docker compose --env-file .env.local --profile app down --volumes --remove-orphans
+          fi
