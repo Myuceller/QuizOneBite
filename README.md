@@ -111,7 +111,25 @@ GitHub에서 **대상(base)을 `develop`으로 지정**해 PR을 만듭니다. �
 - `.env.local`, 실제 API 키, DB 비밀번호, 인증 비밀값은 커밋하지 않습니다.
 - PR에는 변경 목적과 확인 결과를 적습니다. 공유 브랜치에는 강제 푸시하지 않습니다.
 
-현재는 위 절차를 수동으로 지킵니다. GitHub 브랜치 보호 규칙·필수 CI 검사·자동 배포는 아직 설정하지 않았습니다.
+코드·DB·Docker 검증은 아래 GitHub Actions CI로 자동 실행합니다. GitHub 브랜치 보호 규칙에 의한 필수 검사 강제와 자동 배포는 아직 설정하지 않았습니다.
+
+## 자동 CI
+
+[GitHub Actions 실행 결과](https://github.com/Myuceller/QuizOneBite/actions/workflows/ci.yml)에서 확인합니다. 설정 파일은 [ci.yml](.github/workflows/ci.yml)입니다.
+
+- `main`·`develop`을 대상으로 PR을 생성하거나 갱신하면 실행합니다.
+- `main`·`develop`에 커밋이 반영되면 다시 실행합니다.
+- Actions의 **Run workflow**로 수동 실행할 수 있습니다. 같은 PR이나 브랜치에 새 커밋이 들어오면 이전 실행은 취소합니다.
+
+| 검사 이름 | 자동 확인 내용 |
+| --- | --- |
+| `Quality` | Node 24, `npm ci`, 린트, 타입 검사, 단위 테스트, 프로덕션 빌드 |
+| `PostgreSQL integration` | PostgreSQL 18 임시 서비스에서 마이그레이션·저장·인증·권한·요청 제한 테스트 |
+| `Docker smoke` | Docker 이미지 빌드, DB → 마이그레이션 → 앱 실행, DB 준비 상태와 회원가입 페이지 응답 |
+
+세 검사는 독립된 Ubuntu 러너에서 실행합니다. API 키나 운영 DB 연결 정보 없이 `mock` 모드를 사용합니다. Docker 검사에서 생성한 계정 비밀값과 DB 데이터는 해당 CI 실행 전용이며 종료할 때 폐기합니다. CI는 이미지 업로드나 공개 배포를 수행하지 않습니다.
+
+PR의 **Checks**에서 실패한 검사와 단계를 확인하고 수정한 커밋을 푸시하면 재검사합니다. 세 검사가 모두 통과한 뒤 병합합니다. 이후 브랜치 보호를 설정할 때 위 세 검사 이름을 필수 상태 검사로 지정할 수 있습니다.
 
 ## 확인
 
