@@ -70,6 +70,49 @@ docs/                          구조와 AI 설계 결정
 
 이 저장소의 `.agents/skills`에 스킬을 등록했습니다. 스킬 목록이 갱신되지 않으면 프로젝트 세션을 다시 열어 사용할 수 있습니다.
 
+## 브랜치 전략
+
+`main`과 `develop`을 유지하고, 작업마다 짧게 사용하는 브랜치를 만듭니다. GitHub 기본 브랜치는 `main`이며, 평소 개발의 기준은 `develop`입니다.
+
+| 브랜치 | 역할 | 생성 기준 → PR 대상 |
+| --- | --- | --- |
+| `main` | 검증된 배포 기준 코드 | `develop`에서 출시할 변경을 병합 |
+| `develop` | 다음 버전의 기능을 모아 검증 | 작업 브랜치의 PR을 병합 |
+| `feature/*` | 새 기능, 예: `feature/quiz-scoring` | `develop` → `develop` |
+| `fix/*` | 개발 중 발견한 오류 수정 | `develop` → `develop` |
+| `docs/*`, `chore/*` | 문서·설정·의존성 관리 | `develop` → `develop` |
+| `hotfix/*` | 배포된 버전의 긴급 오류 수정 | `main` → `main`, 이후 `main` → `develop` 동기화 |
+
+### 일반 개발 흐름
+
+```sh
+git switch develop
+git pull --ff-only origin develop
+git switch -c feature/quiz-scoring
+# 구현 및 변경에 맞는 검증
+git add <변경한-파일>
+git commit -m "feat: add server-side quiz scoring"
+git push -u origin feature/quiz-scoring
+```
+
+GitHub에서 **대상(base)을 `develop`으로 지정**해 PR을 만듭니다. 기능·수정·문서 작업 PR은 Squash merge로 묶고, 병합된 작업 브랜치는 삭제합니다. `main`이나 `develop`에 직접 기능을 커밋하지 않습니다. 커밋 제목은 `feat:`, `fix:`, `docs:`, `chore:` 등으로 변경 목적을 표시합니다.
+
+### 출시와 긴급 수정
+
+1. `develop`에서 출시 범위를 검증한 뒤 `develop` → `main` PR을 만듭니다.
+2. 두 장기 브랜치의 공통 이력을 유지하도록 **Create a merge commit**으로 병합합니다. 이 PR은 Squash/Rebase merge를 사용하지 않습니다.
+3. 실제 출시 커밋에 `v0.1.0` 같은 태그를 붙이고 해당 버전을 배포합니다. `main` 변경만으로 자동 배포되지는 않으며, 배포 연결은 후속 작업입니다.
+4. 출시 후 `main` → `develop`도 merge commit 방식으로 동기화합니다. 긴급 수정도 `main`에 병합한 뒤 같은 방식으로 `develop`에 반영합니다.
+
+### 병합 전 확인
+
+- 앱 코드 변경은 `npm run check`, DB·인증·저장 로직 변경은 `npm run test:db`까지 확인합니다.
+- Docker 실행 구성 변경은 `npm run docker:up`으로 빌드와 실행을 확인합니다. 문서만 바꾼 경우 내용·링크·diff를 확인합니다.
+- `.env.local`, 실제 API 키, DB 비밀번호, 인증 비밀값은 커밋하지 않습니다.
+- PR에는 변경 목적과 확인 결과를 적습니다. 공유 브랜치에는 강제 푸시하지 않습니다.
+
+현재는 위 절차를 수동으로 지킵니다. GitHub 브랜치 보호 규칙·필수 CI 검사·자동 배포는 아직 설정하지 않았습니다.
+
 ## 확인
 
 ```sh
