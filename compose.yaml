@@ -1,0 +1,58 @@
+name: quizquiz
+
+services:
+  migrate:
+    profiles: [app]
+    build:
+      context: .
+      target: migrations
+    environment:
+      DATABASE_URL: postgresql://quizquiz:${POSTGRES_PASSWORD:?Run npm run db:env first}@db:5432/quizquiz
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    profiles: [app]
+    build:
+      context: .
+      target: runner
+    environment:
+      DATABASE_URL: postgresql://quizquiz:${POSTGRES_PASSWORD:?Run npm run db:env first}@db:5432/quizquiz
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Run npm run db:env first}
+      BETTER_AUTH_URL: ${DOCKER_APP_URL:-http://127.0.0.1:3001}
+      AI_PROVIDER: mock
+    ports:
+      - "127.0.0.1:3001:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    init: true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: quizquiz
+      POSTGRES_DB: quizquiz
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run npm run db:env first}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      # PostgreSQL 18's versioned PGDATA lives beneath this directory.
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quizquiz -d quizquiz"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  postgres_data:

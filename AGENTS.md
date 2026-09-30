@@ -1,0 +1,47 @@
+# QuizQuiz 작업 규칙
+
+Next.js App Router, React, TypeScript 기반 상식 퀴즈 웹앱이다. DB는 PostgreSQL로 결정했으며 인증은 Better Auth로 구현했으며 운영 DB 호스팅은 미정이다. 기본 AI 제공자는 Mock이고 OpenAI Astra 연결은 서버 어댑터로 분리한다.
+
+## 관련 자료
+
+- [프로젝트 구조](docs/architecture.md)
+- [AI 연결 규칙](docs/ai.md)
+- [PostgreSQL 실행과 마이그레이션](docs/database.md)
+- [인증과 세션](docs/auth.md)
+- [Docker 실행과 출시 계획](docs/deployment.md)
+- [Next.js 프로젝트 스킬](.agents/skills/quizquiz-nextjs/SKILL.md)
+- [AI 프로젝트 스킬](.agents/skills/quizquiz-ai/SKILL.md)
+
+## 구현 경계
+
+- `src/app`은 화면과 HTTP 입출력, `src/features/quiz`는 도메인·유스케이스·포트를 담당한다.
+- 도메인에서 Next.js, OpenAI SDK, DB 구현을 import하지 않는다. 서버에서 어댑터를 선택하고 포트로 주입한다.
+- API 키와 AI SDK는 `src/server` 등 서버 전용 코드에 둔다. 클라이언트 번들에 비밀값을 포함하지 않는다.
+- PostgreSQL 어댑터는 `src/server/db`, SQL 마이그레이션은 `db/migrations`에 둔다. 도메인은 `QuizRepository` 계약만 참조한다. 현재 연결은 `pg` 드라이버를 사용한다.
+- 사용자 인증은 `src/server/auth`의 Better Auth와 DB 세션으로 확인한다. 퀴즈 소유자는 서버 세션에서 얻고 기록 조회는 소유자로 제한한다.
+- 적용한 마이그레이션 파일은 수정하지 않고 새 파일을 추가한다. 퀴즈 묶음과 문제는 같은 트랜잭션에서 저장한다.
+- AI 생성 결과는 검토 전 초안이다. 스키마 통과를 사실 검증으로 간주하지 않는다.
+- 미리보기에는 정답과 해설을 포함하지 않는다. 실제 채점 기능을 추가할 때에는 서버가 정답을 보관하고 판정한다.
+- 범위를 넓히기 전에 기존 구조와 사용자 요청을 확인하고, 현재 구현과 후속 계획을 문서에서 구분한다.
+
+## 확인 명령
+
+```sh
+npm run lint
+npm run typecheck
+npm run test
+npm run build
+npm run test:db
+```
+
+변경에 필요한 검증을 수행하고 결과를 기록한다. 자동 테스트와 빌드는 Mock AI를 사용하며 실제 유료 API 요청을 보내지 않는다. 일반 테스트는 DB가 필요 없고, `test:db`는 로컬 PostgreSQL에 임시 DB를 생성해 검증한 뒤 그 임시 DB만 제거한다. 생성 계약이나 서버·클라이언트 경계를 변경할 때에는 관련 문서와 의미 있는 테스트를 함께 확인한다.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
