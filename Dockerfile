@@ -25,6 +25,7 @@ COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 # Render runs migrations from this same image before starting the web service.
 COPY --chown=node:node scripts/db.mjs ./scripts/db.mjs
+COPY --chown=node:node scripts/start-render.sh ./scripts/start-render.sh
 COPY --chown=node:node db/migrations ./db/migrations
 USER node
 EXPOSE 3000
