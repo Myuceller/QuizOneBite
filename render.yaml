@@ -11,7 +11,7 @@ services:
     dockerContext: .
     autoDeployTrigger: checksPass
     # Free web services don't support preDeployCommand.
-    dockerCommand: /bin/sh -c 'node scripts/db.mjs migrate && exec node server.js'
+    dockerCommand: /bin/sh /app/scripts/start-render.sh
     healthCheckPath: /api/health/ready
     envVars:
       - key: AI_PROVIDER

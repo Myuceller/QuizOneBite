@@ -102,6 +102,22 @@ jobs:
         run: |
           curl --fail --silent --show-error --max-time 30 http://127.0.0.1:3001/api/health/ready
           curl --fail --silent --show-error --max-time 30 --output /dev/null http://127.0.0.1:3001/signup
+      - name: Verify Render startup script in the final image
+        run: |
+          trap 'docker logs quizquiz-render-smoke; docker rm -f quizquiz-render-smoke' EXIT
+          docker compose --env-file .env.local --profile app run -d --no-deps --name quizquiz-render-smoke app /bin/sh /app/scripts/start-render.sh
+          docker exec quizquiz-render-smoke node -e '
+            (async () => {
+              for (let attempt = 0; attempt < 30; attempt++) {
+                try {
+                  const response = await fetch("http://127.0.0.1:3000/api/health/ready");
+                  if (response.ok) { console.log("Render startup: DB ready"); return; }
+                } catch {}
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+              process.exitCode = 1;
+            })();
+          '
       - name: Show service logs on failure
         if: failure()
         run: docker compose --env-file .env.local --profile app logs --no-color --tail 150

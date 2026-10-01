@@ -54,7 +54,9 @@ Docker 이미지 빌드
   → HTTPS 주소로 접속
 ```
 
-Render는 로컬 `compose.yaml`을 실행하지 않는다. 앱은 Dockerfile의 마지막 `runner` 단계로 만들고 DB는 별도 관리형 서비스로 생성한다. 무료 웹 서비스는 pre-deploy 명령을 지원하지 않아 테스트 환경에서는 `dockerCommand`로 마이그레이션 성공 후 서버를 시작한다. 재시작할 때도 실행되지만 기존 SQL의 체크섬을 확인하고 새 SQL만 트랜잭션으로 적용한다. 마이그레이션 실패 시 서버는 시작하지 않는다. 운영 환경은 유료 pre-deploy 명령을 유지한다. 샘플 시드는 배포 시 자동 실행하지 않는다.
+Render는 로컬 `compose.yaml`을 실행하지 않는다. 앱은 Dockerfile의 마지막 `runner` 단계로 만들고 DB는 별도 관리형 서비스로 생성한다. 무료 웹 서비스는 pre-deploy 명령을 지원하지 않아 테스트 환경에서는 `dockerCommand: /bin/sh /app/scripts/start-render.sh`로 마이그레이션 성공 후 서버를 시작한다. 시작 명령의 인용부호 해석에 의존하지 않도록 여러 명령은 별도 스크립트에 둔다. 재시작할 때도 실행되지만 기존 SQL의 체크섬을 확인하고 새 SQL만 트랜잭션으로 적용한다. 마이그레이션 실패 시 서버는 시작하지 않는다. 운영 환경은 유료 pre-deploy 명령을 유지한다. 샘플 시드는 배포 시 자동 실행하지 않는다.
+
+기존 배포가 `/bin/sh: node scripts/db.mjs migrate && exec node server.js: not found` 및 종료 코드 127로 실패했다면, 수정 커밋 반영 후 Blueprint에서 **Manual sync**를 실행해 Docker Command도 갱신한다. 코드만 새로 배포하면 기존 서비스의 시작 명령이 남아 있을 수 있다. 서비스 Settings의 Docker Command가 `/bin/sh /app/scripts/start-render.sh`인지 확인한 후 배포한다.
 
 서비스가 Live가 되면 아래 흐름을 확인한다.
 
