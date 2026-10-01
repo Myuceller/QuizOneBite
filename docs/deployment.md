@@ -33,7 +33,7 @@ npm run docker:up
 4. **배포 환경:** 사용자가 선택한 Docker 지원 호스팅·운영 PostgreSQL·도메인·HTTPS를 연결한다. 서버 비밀값, DB 백업과 복구, 제한된 런타임 DB 계정, 로그·알림을 설정한다.
 5. **출시 검증:** 모바일 화면·접근성, 가입부터 채점까지 전체 흐름, 운영 DB 마이그레이션·복구 절차를 확인하고 공개한다.
 
-호스팅은 Render Web Service(Docker)와 Render Postgres로 결정했다. 테스트·운영용 Blueprint와 [Render 시작 가이드](render.md)를 준비했으며, 유료 리소스 생성이나 공개 배포는 아직 실행하지 않았다. 로컬에서는 기존 Compose를 유지한다. Render에서는 앱 이미지의 `preDeployCommand`로 마이그레이션을 실행하므로 최종 이미지에도 DB 실행 스크립트와 SQL을 포함한다. 앱스토어용 네이티브 패키징 여부는 웹 출시 후 별도로 결정한다.
+호스팅은 Render Web Service(Docker)와 Render Postgres로 결정했다. 무료 테스트·유료 운영용 Blueprint와 [Render 시작 가이드](render.md)를 준비했으며, 실제 리소스 생성이나 공개 배포는 아직 확인하지 않았다. 로컬에서는 기존 Compose를 유지한다. Render 무료 테스트 앱은 컨테이너 시작 시, 유료 운영 앱은 `preDeployCommand`로 마이그레이션을 실행하므로 최종 이미지에도 DB 실행 스크립트와 SQL을 포함한다. 무료 DB는 생성 후 30일에 만료된다. 앱스토어용 네이티브 패키징 여부는 웹 출시 후 별도로 결정한다.
 
 ## 검증
 

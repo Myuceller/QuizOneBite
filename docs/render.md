@@ -14,13 +14,15 @@
 
 ## 1. 저장소에 설정 반영
 
-`chore/render-deployment`의 변경을 PR로 `develop`에 병합하고 CI 세 검사를 확인한다. Render가 GitHub의 파일을 읽으므로 로컬에만 있는 설정으로는 시작할 수 없다.
+배포 설정 변경을 PR로 `develop`에 병합하고 CI 세 검사를 확인한다. Render가 GitHub의 파일을 읽으므로 로컬에만 있는 설정으로는 시작할 수 없다.
 
-- `render.yaml`: 테스트 앱 512 MB + PostgreSQL 256 MB / 디스크 1 GB.
+- `render.yaml`: Free 테스트 앱 + Free PostgreSQL(1 GB, 생성 후 30일 만료).
 - `render.production.yaml`: 이후 운영 앱 512 MB + PostgreSQL 1 GB / 디스크 5 GB.
 - `Dockerfile`: 앱 이미지에 DB 마이그레이션 실행 파일과 SQL을 포함한다.
 
-두 Blueprint 모두 **유료 컴퓨트 설정**이다. 배포 전 실행하는 마이그레이션 명령은 Render 유료 웹 서비스에서 지원한다. 파일을 GitHub에 올리는 것만으로 리소스가 생성되지는 않는다. 최종 생성 화면의 앱·DB·저장 공간 요금 합계를 확인한다. 초기 사양은 시작점이며 메모리 사용량에 따라 조정한다.
+테스트 Blueprint는 **무료 체험 구성**, 운영 Blueprint는 **유료 구성**이다. 파일을 GitHub에 올리는 것만으로 리소스가 생성되지는 않는다. 테스트 생성 화면에서는 앱과 DB가 모두 Free이고 예상 컴퓨트 요금이 $0인지 확인한다.
+
+무료 웹 서버는 15분간 접속이 없으면 잠들고 다음 접속 시 약 1분의 재시작 시간이 생긴다. 워크스페이스당 월 750시간을 공유한다. 무료 DB는 워크스페이스당 1개, 생성 후 30일에 만료되고 이후 14일 유예 기간이 지나면 데이터와 함께 삭제된다. 관리형 백업도 제공하지 않으므로 테스트 데이터만 사용하고 만료 전에 장기 DB 구성을 결정한다. 트래픽·빌드 무료 한도도 별도이며 결제 수단이 등록되어 있으면 초과 비용이 생길 수 있다. [무료 플랜 제한](https://render.com/docs/free)
 
 ## 2. 테스트 환경 생성
 
@@ -28,7 +30,7 @@
 2. **New → Blueprint**에서 `Myuceller/QuizOneBite`를 연결한다.
 3. Blueprint 이름은 `quizonebite-staging`, 브랜치는 **`develop`**, Blueprint Path는 **`render.yaml`**로 지정한다.
 4. 생성 대상이 테스트 웹 서비스 1개와 테스트 DB 1개인지, 지역·사양·예상 요금이 맞는지 확인한다.
-5. **Deploy Blueprint**를 누르면 유료 리소스 생성과 최초 배포가 시작된다.
+5. **Deploy Blueprint**를 누르면 무료 테스트 리소스 생성과 최초 배포가 시작된다.
 6. Blueprint의 **Auto Sync는 끈다**. 이후 인프라 설정 변경은 CI 결과를 확인하고 수동 Sync한다. 앱의 일반 코드 변경은 아래 `checksPass` 정책으로 배포한다.
 
 환경변수는 Blueprint가 연결한다. 로컬 `.env.local`을 업로드하지 않는다.
@@ -46,13 +48,13 @@
 
 ```text
 Docker 이미지 빌드
-  → preDeployCommand: node scripts/db.mjs migrate
-  → node server.js
+  → 테스트: 컨테이너 시작 시 migrate 성공 후 exec node server.js
+    운영: preDeployCommand에서 migrate 성공 후 node server.js
   → /api/health/ready 확인
   → HTTPS 주소로 접속
 ```
 
-Render는 로컬 `compose.yaml`을 실행하지 않는다. 앱은 Dockerfile의 마지막 `runner` 단계로 만들고 DB는 별도 관리형 서비스로 생성한다. 마이그레이션은 같은 앱 이미지에서 실행하며 실패하면 새 버전 배포가 중단된다. 기존 SQL의 체크섬을 확인하고 새 SQL만 트랜잭션으로 적용한다. 샘플 시드는 배포 시 자동 실행하지 않는다.
+Render는 로컬 `compose.yaml`을 실행하지 않는다. 앱은 Dockerfile의 마지막 `runner` 단계로 만들고 DB는 별도 관리형 서비스로 생성한다. 무료 웹 서비스는 pre-deploy 명령을 지원하지 않아 테스트 환경에서는 `dockerCommand`로 마이그레이션 성공 후 서버를 시작한다. 재시작할 때도 실행되지만 기존 SQL의 체크섬을 확인하고 새 SQL만 트랜잭션으로 적용한다. 마이그레이션 실패 시 서버는 시작하지 않는다. 운영 환경은 유료 pre-deploy 명령을 유지한다. 샘플 시드는 배포 시 자동 실행하지 않는다.
 
 서비스가 Live가 되면 아래 흐름을 확인한다.
 

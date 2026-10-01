@@ -1,16 +1,17 @@
 # yaml-language-server: $schema=https://render.com/schema/render.yaml.json
-# Staging only. Creating this Blueprint provisions paid resources.
+# Free staging trial. Render's free PostgreSQL expires after 30 days.
 services:
   - type: web
     name: quizonebite-staging
     runtime: docker
     branch: develop
     region: singapore
-    plan: 0.5c-512mb
+    plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
     autoDeployTrigger: checksPass
-    preDeployCommand: node scripts/db.mjs migrate
+    # Free web services don't support preDeployCommand.
+    dockerCommand: /bin/sh -c 'node scripts/db.mjs migrate && exec node server.js'
     healthCheckPath: /api/health/ready
     envVars:
       - key: AI_PROVIDER
@@ -33,6 +34,5 @@ databases:
     user: quizonebite_staging
     postgresMajorVersion: "18"
     region: singapore
-    plan: 0.1c-256mb
-    diskSizeGB: 1
+    plan: free
     ipAllowList: []

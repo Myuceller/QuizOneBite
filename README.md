@@ -159,6 +159,6 @@ npm run docker:up
 
 ## Render 배포 준비
 
-[render.yaml](render.yaml)은 `develop` 테스트 앱·DB, [render.production.yaml](render.production.yaml)은 `main` 운영 앱·DB를 별도로 정의합니다. 먼저 테스트 Blueprint만 생성합니다. 둘 다 유료 리소스 설정이며 아직 Render에 생성하지 않았습니다.
+[render.yaml](render.yaml)은 `develop`의 무료 테스트 앱·DB, [render.production.yaml](render.production.yaml)은 `main`의 유료 운영 앱·DB를 별도로 정의합니다. 먼저 테스트 Blueprint만 생성합니다. 무료 DB는 생성 후 30일에 만료되며 무료 웹 서버에는 유휴 시 중지 제한이 있습니다. 실제 Render 리소스 생성은 아직 확인하지 않았습니다.
 
-Docker 이미지 빌드 후 DB 마이그레이션을 실행하고 준비 상태를 확인합니다. 인증 비밀값은 Render가 생성하고 DB 주소는 환경별로 연결합니다. 테스트 앱은 CI 이후 자동 배포, 운영 앱은 수동 배포로 설정했습니다. Blueprint Auto Sync는 별도로 꺼두고 인프라 변경을 검토 후 반영합니다. 가입·GitHub 연결·최초 배포 순서는 [Render 시작 가이드](docs/render.md)에 있습니다.
+Docker 이미지 빌드 후 DB 마이그레이션을 실행하고 준비 상태를 확인합니다. 무료 테스트 앱은 컨테이너 시작 시, 유료 운영 앱은 pre-deploy 단계에서 마이그레이션합니다. 인증 비밀값은 Render가 생성하고 DB 주소는 환경별로 연결합니다. 테스트 앱은 CI 이후 자동 배포, 운영 앱은 수동 배포로 설정했습니다. Blueprint Auto Sync는 별도로 꺼두고 인프라 변경을 검토 후 반영합니다. 가입·GitHub 연결·최초 배포 순서는 [Render 시작 가이드](docs/render.md)에 있습니다.
