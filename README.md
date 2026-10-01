@@ -53,7 +53,7 @@ scripts/                       DB 설정·마이그레이션·시드 명령
 docs/                          구조와 AI 설계 결정
 ```
 
-`UI → API → 퀴즈 생성 → PostgreSQL 저장 → 공개 미리보기` 순서로 실행합니다. `QuizGenerator`와 `QuizRepository`를 통해 AI와 DB 구현을 도메인에서 분리합니다. 서버의 `DATABASE_URL`로 접속하며 운영 호스팅 제공자는 아직 정하지 않았습니다.
+`UI → API → 퀴즈 생성 → PostgreSQL 저장 → 공개 미리보기` 순서로 실행합니다. `QuizGenerator`와 `QuizRepository`를 통해 AI와 DB 구현을 도메인에서 분리합니다. 서버의 `DATABASE_URL`로 접속하며 원격 호스팅은 Render Web Service(Docker) + Render Postgres를 사용하기로 했습니다. 실제 원격 리소스 생성은 아직 진행하지 않았습니다.
 
 - `GET /api/health`: 앱 상태 확인.
 - `GET /api/health/ready`: DB·필수 스키마 연결 확인.
@@ -101,7 +101,7 @@ GitHub에서 **대상(base)을 `develop`으로 지정**해 PR을 만듭니다. �
 
 1. `develop`에서 출시 범위를 검증한 뒤 `develop` → `main` PR을 만듭니다.
 2. 두 장기 브랜치의 공통 이력을 유지하도록 **Create a merge commit**으로 병합합니다. 이 PR은 Squash/Rebase merge를 사용하지 않습니다.
-3. 실제 출시 커밋에 `v0.1.0` 같은 태그를 붙이고 해당 버전을 배포합니다. `main` 변경만으로 자동 배포되지는 않으며, 배포 연결은 후속 작업입니다.
+3. 실제 출시 커밋에 `v0.1.0` 같은 태그를 붙이고 해당 버전을 배포합니다. Render 운영 설정은 `main` 자동 배포를 끄고 CI 성공 후 수동 배포하도록 준비했습니다. 실제 배포 연결은 후속 작업입니다.
 4. 출시 후 `main` → `develop`도 merge commit 방식으로 동기화합니다. 긴급 수정도 `main`에 병합한 뒤 같은 방식으로 `develop`에 반영합니다.
 
 ### 병합 전 확인
@@ -156,3 +156,9 @@ npm run docker:up
 `db`가 준비되면 `migrate` 컨테이너가 새 SQL을 적용하고, 성공한 뒤에만 `app`이 시작합니다. `npm run docker:logs`로 앱 로그를, `npm run docker:down`으로 앱과 DB 중지를 수행합니다. 데이터 볼륨은 보존합니다. 일반 `npm run db:down`도 같은 Compose 프로젝트이므로 Docker 앱 실행 중에는 사용하지 마세요.
 
 인증 상세는 [auth.md](docs/auth.md), 이미지 구성과 공개 출시 계획은 [deployment.md](docs/deployment.md)를 참고하세요.
+
+## Render 배포 준비
+
+[render.yaml](render.yaml)은 `develop` 테스트 앱·DB, [render.production.yaml](render.production.yaml)은 `main` 운영 앱·DB를 별도로 정의합니다. 먼저 테스트 Blueprint만 생성합니다. 둘 다 유료 리소스 설정이며 아직 Render에 생성하지 않았습니다.
+
+Docker 이미지 빌드 후 DB 마이그레이션을 실행하고 준비 상태를 확인합니다. 인증 비밀값은 Render가 생성하고 DB 주소는 환경별로 연결합니다. 테스트 앱은 CI 이후 자동 배포, 운영 앱은 수동 배포로 설정했습니다. Blueprint Auto Sync는 별도로 꺼두고 인프라 변경을 검토 후 반영합니다. 가입·GitHub 연결·최초 배포 순서는 [Render 시작 가이드](docs/render.md)에 있습니다.

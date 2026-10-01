@@ -1,6 +1,6 @@
 # QuizQuiz 작업 규칙
 
-Next.js App Router, React, TypeScript 기반 상식 퀴즈 웹앱이다. DB는 PostgreSQL로 결정했으며 인증은 Better Auth로 구현했으며 운영 DB 호스팅은 미정이다. 기본 AI 제공자는 Mock이고 OpenAI Astra 연결은 서버 어댑터로 분리한다.
+Next.js App Router, React, TypeScript 기반 상식 퀴즈 웹앱이다. DB는 PostgreSQL, 인증은 Better Auth이며 원격 호스팅은 Render Web Service(Docker)와 Render Postgres로 결정했다. 테스트·운영 Blueprint는 준비했으며 실제 원격 리소스 생성은 아직 수행하지 않았다. 기본 AI 제공자는 Mock이고 OpenAI Astra 연결은 서버 어댑터로 분리한다.
 
 ## 관련 자료
 
@@ -9,6 +9,7 @@ Next.js App Router, React, TypeScript 기반 상식 퀴즈 웹앱이다. DB는 P
 - [PostgreSQL 실행과 마이그레이션](docs/database.md)
 - [인증과 세션](docs/auth.md)
 - [Docker 실행과 출시 계획](docs/deployment.md)
+- [Render 테스트·운영 배포](docs/render.md)
 - [Next.js 프로젝트 스킬](.agents/skills/quizquiz-nextjs/SKILL.md)
 - [AI 프로젝트 스킬](.agents/skills/quizquiz-ai/SKILL.md)
 
