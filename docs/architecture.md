@@ -1,6 +1,6 @@
 # QuizQuiz 구조
 
-Next.js App Router와 React, TypeScript로 만드는 상식 퀴즈 웹앱이다. PostgreSQL에 사용자·세션·생성 초안을 저장한다. Better Auth로 이메일 인증 수단을 연결했으며, 운영 호스팅은 미정이다.
+Next.js App Router와 React, TypeScript로 만드는 상식 퀴즈 웹앱이다. PostgreSQL에 사용자·세션·생성 초안을 저장한다. Better Auth로 이메일·비밀번호 로그인을 구현했으며, 원격 호스팅은 Render Web Service(Docker)와 Render Postgres로 결정했다. 테스트·운영 설정은 준비했고 실제 배포는 아직 수행하지 않았다.
 
 ## 현재 흐름
 

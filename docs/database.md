@@ -1,6 +1,6 @@
 # PostgreSQL
 
-DB 엔진은 PostgreSQL로 확정했다. 현재 `pg` 드라이버와 SQL 마이그레이션을 사용하며, 인증은 Better Auth이며 운영 호스팅은 선택하지 않았다. 로컬 Compose는 PostgreSQL 18을 실행한다.
+DB 엔진은 PostgreSQL로 확정했다. 현재 `pg` 드라이버와 SQL 마이그레이션, Better Auth를 사용한다. 원격 DB는 Render Postgres를 선택했으며 테스트·운영 DB를 따로 생성할 설정을 준비했다. 실제 원격 DB는 아직 생성하지 않았다. 로컬 Compose는 PostgreSQL 18을 실행한다. 연결 순서는 [Render 시작 가이드](render.md)에 있다.
 
 ## 로컬 준비
 

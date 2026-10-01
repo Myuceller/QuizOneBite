@@ -23,6 +23,9 @@ WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
 COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
+# Render runs migrations from this same image before starting the web service.
+COPY --chown=node:node scripts/db.mjs ./scripts/db.mjs
+COPY --chown=node:node db/migrations ./db/migrations
 USER node
 EXPOSE 3000
 CMD ["node", "server.js"]
