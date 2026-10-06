@@ -1,0 +1,383 @@
+{
+  "reviewedAt": "2026-10-06",
+  "purpose": "기존 UI 5개 분야 × 3난이도별 게시 문항 최소 5개를 위한 부족분 34개 생성 기록. 반복 실행용 시드가 아님.",
+  "sources": [
+    {
+      "id": "browser",
+      "title": "Mozilla — Internet, browsers, search engines and websites",
+      "url": "https://blog.mozilla.org/en/uncategorized/internet-search-engine-browser/",
+      "facts": "웹 브라우저는 웹사이트에 접속해 페이지를 보여주는 프로그램이다. 검색 엔진은 사용자가 입력한 검색어와 관련된 웹페이지를 찾는 서비스다. 브라우저와 검색 엔진은 역할이 다르다."
+    },
+    {
+      "id": "cloud",
+      "title": "Cloudflare — What is the cloud?",
+      "url": "https://www.cloudflare.com/learning/cloud/what-is-the-cloud/",
+      "facts": "클라우드 서비스는 인터넷으로 접속하는 서버에서 프로그램을 실행하거나 데이터를 저장한다. 클라우드에 올린 파일도 실제 컴퓨터 서버의 저장 장치에 보관된다. 사용자의 기기 안에만 저장되는 것은 아니다."
+    },
+    {
+      "id": "eggs",
+      "title": "Exploratorium — The Amazing Multi-Tasking Egg",
+      "url": "https://annex.exploratorium.edu/cooking/icooks/article_5-03.html",
+      "facts": "달걀흰자를 휘저으면 단백질이 공기방울을 감싸 거품을 유지해 머랭을 만들 수 있다. 달걀을 가열하면 단백질이 구조를 바꾸고 서로 결합해 굳는다. 노른자의 성분은 기름방울이 서로 합쳐져 분리되는 것을 줄여 마요네즈처럼 기름과 물이 섞인 상태를 유지하도록 돕는다."
+    },
+    {
+      "id": "incognito",
+      "title": "Google Chrome Help — Incognito mode",
+      "url": "https://support.google.com/chrome/answer/95464?hl=en",
+      "facts": "Chrome 시크릿 모드는 세션이 끝난 뒤 기기에 방문 기록과 사이트 데이터를 남기는 것을 제한한다. 인터넷 제공업체나 학교·회사의 네트워크 관리자에게 활동을 보이지 않게 만드는 것은 아니다. 시크릿 모드에서 내려받은 파일과 저장한 북마크는 창을 닫아도 남는다."
+    },
+    {
+      "id": "https",
+      "title": "Google Chrome Help — Secure connections",
+      "url": "https://support.google.com/chrome/answer/95617?hl=en",
+      "facts": "HTTPS로 연결이 보호된다는 것은 사용자와 해당 사이트 사이에 주고받는 정보가 보호된다는 뜻이다. 안전한 연결 표시만으로 그 사이트 운영자가 믿을 만하거나 내용이 사실이라고 보증되지는 않으므로 접속하려던 사이트 주소가 맞는지도 확인해야 한다."
+    },
+    {
+      "id": "inflation",
+      "title": "St. Louis Fed — Inflation, Disinflation and Deflation",
+      "url": "https://www.stlouisfed.org/open-vault/2023/august/explaining-inflation-disinflation-deflation",
+      "facts": "물가상승률이 양수인 채 낮아지면 물가는 계속 오르지만 오르는 속도가 느려진다. 물가 수준 자체가 내려가는 것과 상승률이 낮아지는 것은 다르다. 수치 계산 없이 뉴스의 의미를 해석할 수 있다."
+    },
+    {
+      "id": "real-wage",
+      "title": "St. Louis Fed — Real values",
+      "url": "https://www.stlouisfed.org/open-vault/2023/july/real-values-how-they-are-used",
+      "facts": "명목 임금은 받은 돈의 액수이고 실질 임금은 물가 변화를 반영한 구매력을 뜻한다. 월급 액수가 그대로인데 물가가 오르면 같은 돈으로 살 수 있는 양이 줄어든다. 액수 증가만 보고 구매력이 늘었다고 단정할 수 없고 물가 변화와 함께 보아야 한다."
+    },
+    {
+      "id": "dolphin",
+      "title": "NOAA — Are dolphins fish?",
+      "url": "https://oceanservice.noaa.gov/facts/dolphin.html",
+      "facts": "돌고래는 물고기가 아니라 포유류다. 물고기처럼 아가미로 호흡하는 대신 폐로 공기를 마시므로 수면 위로 올라와 숨을 쉰다. 고래와 쇠돌고래도 포유류다."
+    },
+    {
+      "id": "ice",
+      "title": "USGS — Water Density",
+      "url": "https://www.usgs.gov/water-science-school/science/water-density",
+      "facts": "일반적인 얼음은 액체 물보다 밀도가 낮아 물 위에 뜬다. 얼음이 될 때 물 분자가 더 넓게 벌어진 구조를 이루기 때문이다. 같은 양의 물은 얼면서 부피가 커진다. 숫자나 중수 등 예외적인 동위원소는 다루지 않는다."
+    },
+    {
+      "id": "condensation",
+      "title": "USGS — Condensation and the Water Cycle",
+      "url": "https://www.usgs.gov/water-science-school/science/condensation-and-water-cycle",
+      "facts": "응결은 공기 중 수증기가 액체 물로 바뀌는 현상이다. 차가운 유리창이나 차가운 음료잔 겉에 맺히는 물방울은 주변 공기 속 수증기가 식으며 응결한 것이다."
+    },
+    {
+      "id": "metal",
+      "title": "Exploratorium — Cold Metal",
+      "url": "https://www.exploratorium.edu/snacks/cold-metal",
+      "facts": "같은 실내에 충분히 오래 둔 금속과 나무는 온도가 같을 수 있다. 금속이 더 차갑게 느껴지는 이유는 손의 열을 더 빠르게 빼앗기 때문이다. 손의 감각은 온도뿐 아니라 열이 옮겨가는 속도에도 영향을 받는다. 나무나 스티로폼은 열을 천천히 전달한다."
+    },
+    {
+      "id": "sound",
+      "title": "NASA — Anatomy of an Electromagnetic Wave",
+      "url": "https://science.nasa.gov/ems/02_anatomy/",
+      "facts": "소리는 물질의 진동이 전달되는 파동이라 공기·물·고체 같은 매질이 필요하다. 진공에서는 전달되지 않는다. 빛이나 전파 같은 전자기파는 물질이 없어도 진공을 지날 수 있다. 그래서 우주선 사이에서는 소리를 직접 보내는 대신 전파를 이용해 통신한다."
+    },
+    {
+      "id": "heat-water",
+      "title": "USGS — Water Density: related specific heat information",
+      "url": "https://www.usgs.gov/water-science-school/science/water-density",
+      "facts": "물은 온도를 올리는 데 많은 열이 필요한 물질로 열용량이 큰 편이다. 같은 질량에 같은 양의 열을 줘도 물은 열용량이 작은 물질보다 온도 변화가 작다. 온도가 같다는 것만으로 저장된 열에너지나 가열에 필요한 열량까지 같다는 뜻은 아니다."
+    },
+    {
+      "id": "hangul",
+      "title": "National Institute of Korean Language — Background of Hangeul",
+      "url": "https://www.korean.go.kr/eng_hangeul/setting/002.html",
+      "facts": "세종은 일반 백성이 쉽게 배우고 써서 더 나은 생활을 할 수 있도록 한글을 만들었다. 한자를 익히기 어려운 일반 사람들이 자기 뜻을 표현하도록 하는 취지가 있었다."
+    },
+    {
+      "id": "athens",
+      "title": "British Museum — Athens travel guide",
+      "url": "https://www.britishmuseum.org/blog/historical-city-travel-guide-athens-5th-century-bc",
+      "facts": "고대 아테네의 민주정에서 정치적 의사결정에 참여한 시민은 아테네 시민 가문의 성인 남성이었다. 여성, 거주 외국인, 노예는 제외됐다. 민주정이라는 이름이 당시 모든 주민에게 같은 정치적 권리가 있었다는 뜻은 아니다."
+    },
+    {
+      "id": "byzantium",
+      "title": "The Met — Byzantium",
+      "url": "https://www.metmuseum.org/essays/byzantium-ca-330-1453",
+      "facts": "오늘날 비잔티움이라고 부르는 동로마 제국의 주민은 자신들을 로마인으로 여겼고 로마 제국의 계승자로 인식했다. 서로마의 쇠퇴·멸망 이후에도 동쪽의 로마 제국은 계속됐다. 로마 제국의 역사가 서쪽의 멸망과 동시에 모두 끝난 것은 아니다."
+    },
+    {
+      "id": "ancient-color",
+      "title": "The Met — Chroma: Ancient Sculpture in Color",
+      "url": "https://www.metmuseum.org/exhibitions/chroma",
+      "facts": "고대 그리스·로마의 조각상에는 원래 다양한 색을 칠한 것이 많았다. 오늘날 흰 대리석처럼 보인다는 이유로 제작 당시에도 언제나 흰색이었다고 단정할 수 없다. 남아 있는 안료의 흔적을 분석해 원래의 채색을 연구한다."
+    },
+    {
+      "id": "renaissance",
+      "title": "National Gallery — Renaissance",
+      "url": "https://www.nationalgallery.org.uk/paintings/glossary/renaissance",
+      "facts": "르네상스는 재탄생이라는 뜻이며 고대의 미술·건축·문학 문화에 대한 관심의 재발견과 부흥을 가리킨다. 과거를 전부 버리고 아무 전통 없이 새 문화를 만든 것이라는 설명은 맞지 않는다."
+    },
+    {
+      "id": "watt",
+      "title": "Science Museum — James Watt and the separate condenser",
+      "url": "https://blog.sciencemuseum.org.uk/james-watt-and-the-separate-condenser/",
+      "facts": "와트의 업적은 이미 있던 증기기관의 효율을 크게 높여 연료 사용을 줄인 중요한 개량이었다. 증기기관을 광산 밖의 공장과 작업장 등에서도 널리 활용하는 데 도움이 됐다. 와트가 아무 선행 기술 없이 증기기관 자체를 처음 만들었다는 설명과 구별해야 한다."
+    },
+    {
+      "id": "polar-desert",
+      "title": "British Antarctic Survey — Antarctica",
+      "url": "https://www.bas.ac.uk/about/where-we-work/antarctica/",
+      "facts": "남극의 내륙은 새로 내리는 눈이 매우 적어 사막으로 분류되는 지역이 많다. 사막의 기준은 단순히 더운 기온이나 모래가 아니라 강수량이 적고 건조하다는 점이다. 이미 쌓여 있는 두꺼운 얼음과 현재의 적은 강수량은 함께 존재할 수 있다."
+    },
+    {
+      "id": "map",
+      "title": "USGS — How are different map projections used?",
+      "url": "https://www.usgs.gov/faqs/how-are-different-map-projections-used",
+      "facts": "구형 지구를 평면 지도에 옮기면 거리·면적·모양·방향 중 어떤 성질은 왜곡될 수밖에 없다. 메르카토르 세계지도에서는 극지방에 가까운 지역의 면적과 거리가 크게 왜곡된다. 지도에서 보이는 크기만으로 실제 대륙의 면적을 바로 비교하면 안 된다."
+    },
+    {
+      "id": "polar-layout",
+      "title": "NSIDC — Quick Facts About Sea Ice",
+      "url": "https://nsidc.org/learn/parts-cryosphere/sea-ice/quick-facts-about-sea-ice",
+      "facts": "북극은 대체로 육지에 둘러싸인 바다이고 남극은 바다에 둘러싸인 대륙이다. 두 극지방이 모두 얼음으로 덮여 보인다고 해서 지리적 바탕이 같은 것은 아니다."
+    },
+    {
+      "id": "dateline",
+      "title": "NOAA — International date line",
+      "url": "https://oceanservice.noaa.gov/facts/international-date-line.html",
+      "facts": "국제 날짜 변경선은 태평양을 지나는 날짜의 경계다. 대체로 경도 180도를 따르지만 일부 영토와 섬들을 피해 굽어 있다. 날짜 경계가 자연 지형처럼 정해진 완전한 직선일 필요는 없고 지역의 사정이 반영된다."
+    },
+    {
+      "id": "mona",
+      "title": "Louvre — Mona Lisa",
+      "url": "https://www.louvre.fr/en/explore/the-palace/from-the-mona-lisa-to-the-wedding-feast-at-cana",
+      "facts": "모나리자는 레오나르도 다빈치가 그린 초상화이며 루브르 박물관의 대표 작품이다."
+    },
+    {
+      "id": "starry",
+      "title": "MoMA — The Starry Night",
+      "url": "https://www.moma.org/collection/works/79802",
+      "facts": "별이 빛나는 밤은 빈센트 반 고흐의 대표 회화다. 소용돌이치는 듯한 밤하늘과 강한 색채·붓질로 잘 알려져 있다."
+    },
+    {
+      "id": "foley",
+      "title": "Academy — Sound & the Moving Image",
+      "url": "https://www.oscars.org/events/family-day-academy-sound-moving-image",
+      "facts": "폴리 아티스트는 다양한 뜻밖의 재료를 이용해 영상에 맞는 효과음을 만들어 낸다. 영화에서 들리는 소리를 반드시 촬영 현장의 실제 소리만으로 구성해야 하는 것은 아니다."
+    },
+    {
+      "id": "perspective",
+      "title": "National Gallery — Perspective",
+      "url": "https://www.nationalgallery.org.uk/paintings/glossary/perspective",
+      "facts": "원근법은 평면 그림에 입체적인 공간감을 만드는 표현 방식이다. 뒤쪽 물체는 앞쪽 물체보다 작게 보인다. 한 점 투시에서는 실제로 평행한 선들이 화면 안에서 멀리 갈수록 한 점으로 모이는 듯 보이게 표현된다."
+    },
+    {
+      "id": "prints",
+      "title": "The Met — L’Estampe Originale",
+      "url": "https://www.metmuseum.org/perspectives/lestampe-originale",
+      "facts": "판화는 여러 장 존재할 수 있지만 회화처럼 독창적인 예술 작품일 수 있다. 여러 장 찍었다는 사실만으로 모두 이미 존재하는 그림을 베낀 복제품이나 위조품이라고 단정할 수 없다."
+    },
+    {
+      "id": "abstract",
+      "title": "MoMA — Modern Art and Ideas glossary",
+      "url": "https://www.moma.org/moma_learning/docs/MAI7_Full.pdf",
+      "facts": "추상은 대상을 실제 모습대로 재현하는 데 얽매이지 않는 미술을 가리킨다. 선·색·형태의 관계로 표현할 수 있으므로 눈에 보이는 사물을 사실적으로 묘사했는지만으로 작품의 성격을 판단할 수 없다."
+    },
+    {
+      "id": "piano",
+      "title": "Yamaha — Musical Instrument Guide",
+      "url": "https://www.yamaha.com/en/musical_instrument_guide/",
+      "facts": "일반적인 어쿠스틱 피아노는 건반을 누르면 해머가 현을 때려 소리를 낸다. 건반 악기라는 연주 방식과 현을 진동시킨다는 소리 발생 원리는 함께 설명할 수 있다. 디지털 피아노는 이 설명의 대상이 아니다."
+    },
+    {
+      "id": "sax",
+      "title": "Yamaha — Origins of the saxophone",
+      "url": "https://www.yamaha.com/en/musical_instrument_guide/saxophone/structure/",
+      "facts": "색소폰은 금속인 황동으로 만들지만 소리를 내는 원리에 따라 목관악기로 분류된다. 악기 분류를 몸체의 재료만 보고 결정할 수는 없다."
+    }
+  ],
+  "batches": [
+    {
+      "input": {
+        "category": "general",
+        "subcategory": "technology-computing",
+        "difficulty": "easy",
+        "count": 2
+      },
+      "evidenceIds": [
+        "browser",
+        "cloud"
+      ]
+    },
+    {
+      "input": {
+        "category": "general",
+        "subcategory": "lifestyle-cooking",
+        "difficulty": "medium",
+        "count": 3
+      },
+      "evidenceIds": [
+        "eggs"
+      ]
+    },
+    {
+      "input": {
+        "category": "general",
+        "subcategory": "technology-computing",
+        "difficulty": "hard",
+        "count": 3
+      },
+      "evidenceIds": [
+        "incognito",
+        "https"
+      ]
+    },
+    {
+      "input": {
+        "category": "general",
+        "subcategory": "society-economics",
+        "difficulty": "hard",
+        "count": 2
+      },
+      "evidenceIds": [
+        "inflation",
+        "real-wage"
+      ]
+    },
+    {
+      "input": {
+        "category": "science",
+        "subcategory": "science-nature",
+        "difficulty": "easy",
+        "count": 1
+      },
+      "evidenceIds": [
+        "dolphin"
+      ]
+    },
+    {
+      "input": {
+        "category": "science",
+        "subcategory": "science-physics",
+        "difficulty": "medium",
+        "count": 2
+      },
+      "evidenceIds": [
+        "ice",
+        "condensation"
+      ]
+    },
+    {
+      "input": {
+        "category": "science",
+        "subcategory": "science-physics",
+        "difficulty": "hard",
+        "count": 3
+      },
+      "evidenceIds": [
+        "metal",
+        "sound",
+        "heat-water"
+      ]
+    },
+    {
+      "input": {
+        "category": "history",
+        "subcategory": "history-korea",
+        "difficulty": "medium",
+        "count": 1
+      },
+      "evidenceIds": [
+        "hangul"
+      ]
+    },
+    {
+      "input": {
+        "category": "history",
+        "subcategory": "history-europe",
+        "difficulty": "hard",
+        "count": 5
+      },
+      "evidenceIds": [
+        "athens",
+        "byzantium",
+        "ancient-color",
+        "renaissance",
+        "watt"
+      ]
+    },
+    {
+      "input": {
+        "category": "geography",
+        "subcategory": "geography-land-ocean",
+        "difficulty": "hard",
+        "count": 3
+      },
+      "evidenceIds": [
+        "polar-desert",
+        "map",
+        "polar-layout"
+      ]
+    },
+    {
+      "input": {
+        "category": "geography",
+        "subcategory": "geography-borders",
+        "difficulty": "hard",
+        "count": 1
+      },
+      "evidenceIds": [
+        "dateline"
+      ]
+    },
+    {
+      "input": {
+        "category": "culture",
+        "subcategory": "culture-art",
+        "difficulty": "easy",
+        "count": 2
+      },
+      "evidenceIds": [
+        "mona",
+        "starry"
+      ]
+    },
+    {
+      "input": {
+        "category": "culture",
+        "subcategory": "culture-film",
+        "difficulty": "medium",
+        "count": 1
+      },
+      "evidenceIds": [
+        "foley"
+      ]
+    },
+    {
+      "input": {
+        "category": "culture",
+        "subcategory": "culture-art",
+        "difficulty": "hard",
+        "count": 3
+      },
+      "evidenceIds": [
+        "perspective",
+        "prints",
+        "abstract"
+      ]
+    },
+    {
+      "input": {
+        "category": "culture",
+        "subcategory": "culture-music",
+        "difficulty": "hard",
+        "count": 2
+      },
+      "evidenceIds": [
+        "piano",
+        "sax"
+      ]
+    }
+  ],
+  "editorialSources": [
+    {
+      "id": "ocean-heat",
+      "title": "NOAA — The Sea Breeze",
+      "url": "https://www.noaa.gov/jetstream/ocean/sea-breeze",
+      "facts": "바다는 햇빛이 깊이 들어가고 물이 섞여 많은 양의 물에 열을 저장한다. 육지는 표면 부근이 데워지므로 낮과 밤의 온도 변화가 물보다 크다. 열량 조건문을 일상적인 바다·육지 온도 변화 질문으로 바꿀 때 사용했다."
+    }
+  ]
+}
