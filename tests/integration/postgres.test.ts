@@ -9,6 +9,7 @@ import { MockQuizGenerator } from "@/server/ai/mock-quiz-generator";
 import { betterAuth } from "better-auth";
 import { authOptions } from "@/server/auth/options";
 import { consumePreviewQuota } from "@/server/db/quiz-history";
+import { PostgresPlayRepository, consumePlayQuota } from '@/server/db/play-repository';
 
 const execute = promisify(execFile);
 const testDatabase = `quizquiz_test_${randomUUID().replaceAll("-", "")}`;
@@ -134,7 +135,7 @@ describe("PostgreSQL persistence", () => {
     await command("seed");
     await command("seed");
     const migrations = await pool.query("SELECT count(*)::int AS count FROM quizquiz.schema_migrations");
-    expect(migrations.rows[0].count).toBe(3);
+    expect(migrations.rows[0].count).toBe(5);
     const sample = await repository.findById("98c2d9a0-6990-4d57-8c81-b31704315a48");
     expect(sample?.questions).toHaveLength(3);
     expect(sample?.metadata.verificationStatus).toBe("unreviewed");
@@ -198,5 +199,108 @@ describe("PostgreSQL persistence", () => {
     await repository.save(draft);
     await pool.query("DELETE FROM quizquiz.quiz_questions WHERE quiz_id = $1 AND position = 1", [draft.id]);
     await expect(repository.findById(draft.id)).rejects.toMatchObject({ code: "INVALID_STORED_QUIZ" });
+  });
+});
+
+describe('question bank, play and community feedback', () => {
+  let play: PostgresPlayRepository;
+  const users = Array.from({ length: 4 }, () => randomUUID());
+  const startInput = () => ({ requestId: randomUUID(), category: 'all' as const, difficulty: 'all' as const, count: 5 });
+  beforeAll(async () => {
+    play = new PostgresPlayRepository(pool);
+    for (const [index, id] of users.entries()) await pool.query(`INSERT INTO public.auth_user (id,name,email,"emailVerified","createdAt","updatedAt") VALUES($1,'Play tester',$2,false,now(),now())`, [id, `play-${index}@example.test`]);
+  });
+  it('starts from published questions, preserves shuffled answers privately and retries starts idempotently', async () => {
+    const input = startInput();
+    const [a,b] = await Promise.all([play.start(users[0], input), play.start(users[0], input)]);
+    expect(a).toEqual(b); expect(a.questions).toHaveLength(5);
+    expect(new Set(a.questions.map(q => q.id)).size).toBe(5);
+    for (const q of a.questions) {
+      expect(q).not.toHaveProperty('result'); expect(q).not.toHaveProperty('correct_answer_index'); expect(q).not.toHaveProperty('explanation');
+      const stored = await pool.query('SELECT options,correct_answer_index FROM quizquiz.play_items WHERE session_id=$1 AND position=$2',[a.id,q.position]);
+      const bank = await pool.query('SELECT options,correct_answer_index FROM quizquiz.bank_questions WHERE id=$1',[q.id]);
+      expect(stored.rows[0].options[stored.rows[0].correct_answer_index]).toBe(bank.rows[0].options[bank.rows[0].correct_answer_index]);
+    }
+    expect(await play.get(users[0],a.id)).toEqual(a);
+    await expect(play.get(users[1],a.id)).rejects.toMatchObject({ status: 404 });
+    await expect(play.start(users[1],input)).rejects.toMatchObject({ status: 404 });
+    await expect(play.answer(users[1],a.id,0,0)).rejects.toMatchObject({ status: 404 });
+  });
+  it('prioritizes unseen questions, reuses only when exhausted and keeps sessions isolated', async () => {
+    const history = await play.history(users[0]);
+    const first = await play.get(users[0], history[0].id);
+    const second = await play.start(users[0],startInput());
+    expect(second.questions.every(q => !first.questions.some(old => old.id === q.id))).toBe(true);
+    expect(second.questions.every(q => !q.isReview)).toBe(true);
+    const third = await play.start(users[0],startInput());
+    expect(third.questions.every(q => q.isReview)).toBe(true);
+  });
+  it('requires a submitted answer for ratings/reports and grades only the current question once', async () => {
+    const s = await play.start(users[1],startInput());
+    await expect(play.rate(users[1],s.questions[0].id,{ value: 1 })).rejects.toMatchObject({ status: 403 });
+    await expect(play.report(users[1],s.questions[0].id,'answer')).rejects.toMatchObject({ status: 403 });
+    await expect(play.answer(users[1],s.id,1,0)).rejects.toMatchObject({ code: 'OUT_OF_ORDER' });
+    const key = await pool.query('SELECT correct_answer_index FROM quizquiz.play_items WHERE session_id=$1 AND position=0',[s.id]);
+    const answer = key.rows[0].correct_answer_index;
+    const [one,two] = await Promise.all([play.answer(users[1],s.id,0,answer), play.answer(users[1],s.id,0,answer)]);
+    expect(one).toEqual(two); expect(one.score).toBe(1); expect(one.questions[0].result?.correct).toBe(true);
+    expect(one.questions[0].result?.sources.length).toBeGreaterThan(0); expect(one.questions[1].result).toBeUndefined();
+    await expect(play.answer(users[1],s.id,0,(answer+1)%4)).rejects.toMatchObject({ code: 'ALREADY_ANSWERED' });
+    for (let i=1;i<s.questions.length;i++) await play.answer(users[1],s.id,i,0);
+    expect((await play.get(users[1],s.id)).completed).toBe(true);
+    expect((await play.history(users[1]))[0].answered).toBe(5);
+  });
+  it('upserts one vote per account, including changes across repeated plays', async () => {
+    const history = await play.history(users[1]); const s = await play.get(users[1], history[0].id); const qid = s.questions[0].id;
+    await Promise.all(Array.from({ length: 6 }, () => play.rate(users[1],qid,{ value: 1 })));
+    let rows = await pool.query('SELECT * FROM quizquiz.question_ratings WHERE question_id=$1 AND user_id=$2',[qid,users[1]]);
+    expect(rows.rowCount).toBe(1); expect(rows.rows[0].value).toBe(1);
+    await play.rate(users[1],qid,{ value: -1, reason: 'options' });
+    rows = await pool.query('SELECT * FROM quizquiz.question_ratings WHERE question_id=$1 AND user_id=$2',[qid,users[1]]);
+    expect(rows.rowCount).toBe(1); expect(rows.rows[0].value).toBe(-1); expect(rows.rows[0].reason).toBe('options');
+    expect((await play.get(users[1],s.id)).questions[0].rating).toEqual({ value: -1, reason: 'options' });
+  });
+  it('counts distinct reporters atomically, pauses new exposure and queues minority reports too', async () => {
+    const qid = '70000000-0000-4000-8000-000000000001';
+    for (const user of users.slice(0,3)) {
+      const s = await play.start(user,{ ...startInput(), category: 'general', difficulty: 'medium', count: 1 });
+      await play.answer(user,s.id,0,0);
+    }
+    await Promise.all(Array.from({ length: 5 }, () => play.report(users[0],qid,'answer')));
+    expect((await pool.query('SELECT status FROM quizquiz.bank_questions WHERE id=$1',[qid])).rows[0].status).toBe('published');
+    await Promise.all([play.report(users[1],qid,'explanation'), play.report(users[2],qid,'answer')]);
+    expect((await pool.query('SELECT status FROM quizquiz.bank_questions WHERE id=$1',[qid])).rows[0].status).toBe('paused');
+    expect((await pool.query('SELECT count(*)::int AS n FROM quizquiz.question_reports WHERE question_id=$1',[qid])).rows[0].n).toBe(3);
+    await expect(play.start(users[3], { ...startInput(), category: 'general', difficulty: 'medium' })).rejects.toMatchObject({ code: 'EMPTY_BANK' });
+    const s = await play.start(users[3],{ ...startInput(), count: 10 });
+    expect(s.questions).toHaveLength(9); expect(s.questions.some(q => q.id === qid)).toBe(false);
+  });
+  it('enforces independent database-backed action quotas under concurrency', async () => {
+    const attempts = await Promise.all(Array.from({ length: 14 }, () => consumePlayQuota(users[3],'start',pool)));
+    expect(attempts.filter(Boolean)).toHaveLength(10);
+    expect(await consumePlayQuota(users[3],'feedback',pool)).toBe(true);
+  });
+  it('imports only drafts, prevents publication without sources and supports reviewed recovery', async () => {
+    const { mkdtemp, writeFile, rm } = await import('node:fs/promises');
+    const { tmpdir } = await import('node:os'); const { join } = await import('node:path');
+    const temp = await mkdtemp(join(tmpdir(),'quiz-bank-'));
+    const id = randomUUID(); const file = join(temp,'questions.json');
+    const q = { id,category:'science',difficulty:'medium',question:'Operator import fixture?',options:['a','b','c','d'],correctAnswerIndex:1,explanation:'Fixture only',sources:[] as {title:string;url:string}[] };
+    const cli = (...args: string[]) => execute(process.execPath,['scripts/bank.mjs',...args],{env:{...process.env,DATABASE_URL:testUrl},timeout:20000});
+    try {
+      await writeFile(file,JSON.stringify([q])); await cli('import',file);
+      expect((await pool.query('SELECT status FROM quizquiz.bank_questions WHERE id=$1',[id])).rows[0].status).toBe('draft');
+      await expect(cli('publish',id,'tester','verified')).rejects.toThrow();
+      q.sources=[{title:'Example source',url:'https://example.com'}];
+      await writeFile(file,JSON.stringify([q])); await cli('import',file); await cli('publish',id,'tester','test review');
+      await expect(cli('import',file)).rejects.toThrow();
+      await cli('retire',id,'tester','test finished');
+      await expect(cli('pause',id,'tester','cannot restore retired content')).rejects.toThrow();
+      await expect(cli('publish',id,'tester','cannot restore retired content')).rejects.toThrow();
+      const queue = JSON.parse((await cli('queue')).stdout);
+      expect(queue.some((item: {id: string; open_reports: number}) => item.id==='70000000-0000-4000-8000-000000000001' && item.open_reports===3)).toBe(true);
+      await cli('publish','70000000-0000-4000-8000-000000000001','tester','report review fixture');
+      expect((await pool.query("SELECT count(*)::int AS n FROM quizquiz.question_reports WHERE status='open'")).rows[0].n).toBe(0);
+    } finally { await rm(temp,{recursive:true,force:true}); }
   });
 });

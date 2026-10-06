@@ -68,14 +68,21 @@ erDiagram
 
 `quizzes`는 생성 초안의 묶음이다. 사용자별 플레이 세션이 아니다. 문제 ID는 초안 내부에서만 유일하며 복합 기본키 `(quiz_id, id)`로 관리한다. `position`으로 문제 순서를, PostgreSQL `text[]`로 보기 순서를 보존한다. 정답 인덱스는 0부터 3까지다.
 
-현재 검토 상태는 `unreviewed`만 허용한다. 게시·검수 단계가 필요해지면 새 마이그레이션과 도메인 변경을 함께 추가한다. 사용자·인증 세션은 `0002_auth.sql`, 퀴즈 소유자·사용량 제한은 `0003_quiz_owners.sql`에 추가했다. 플레이 세션·제출 답안은 후속 작업이다.
+생성 초안의 검토 상태는 `unreviewed`다. 별도 문제 은행은 `draft/published/paused/retired` 상태를 사용한다. 사용자·인증 세션은 `0002_auth.sql`, 퀴즈 소유자·사용량 제한은 `0003_quiz_owners.sql`에 추가했다. `0004_question_bank.sql`에 문제 은행·플레이·평가·신고를, `0005_starter_questions.sql`에 출처를 확인한 초기 문제 10개를 추가했다.
+
+- `bank_questions`: 검토·게시 상태, 출처, 문제 원본.
+- `play_sessions`, `play_items`: 사용자별 풀이, 섞인 보기와 정답의 스냅샷, 제출 답안.
+- `question_ratings`, `question_reports`: 계정·문제당 평가 1개와 오류 신고 1개.
+- `play_limits`: 여러 인스턴스가 공유하는 출제·답안·평가 요청 제한.
+
+기존 초안과 플레이 기록은 분리한다. 정책과 운영 명령은 [문제 은행 문서](question-bank.md)를 참고한다.
 
 ## 저장 규칙
 
 - `PostgresQuizRepository.save`는 퀴즈와 모든 문제를 같은 연결의 트랜잭션으로 저장한다. 중간에 실패하면 전체를 롤백한다. [pg 트랜잭션](https://node-postgres.com/features/transactions)
 - 저장된 초안은 불변이다. 같은 ID를 다시 삽입해 기존 내용을 덮어쓰지 않는다.
 - 조회는 한 SQL 문으로 일관된 스냅샷을 읽고 도메인 스키마와 문제 개수를 재검증한다.
-- SQL 값은 매개변수로 전달한다. 서버 전용 모듈만 DB에 연결하고 브라우저에는 정답·해설을 제외한 DTO를 반환한다.
+- SQL 값은 매개변수로 전달한다. 서버 전용 모듈만 DB에 연결하고 브라우저에는 미제출 문제의 정답·해설을 제외한 DTO를 반환한다.
 - 앱은 지연 생성한 최대 5개 연결의 풀을 재사용한다. 개발 중 접속 주소를 바꾸면 서버를 재시작한다. [pg 연결 풀](https://node-postgres.com/features/pooling)
 - 운영 인스턴스가 늘면 전체 연결 수와 제공업체의 연결 풀 설정을 함께 조정한다. TLS 설정은 제공업체의 접속 안내에 맞추며 인증서 검증을 임의로 끄지 않는다.
 

@@ -22,6 +22,7 @@
     "db:migrate": "node --env-file-if-exists=.env.local scripts/db.mjs migrate",
     "db:seed": "node --env-file-if-exists=.env.local scripts/db.mjs seed",
     "db:status": "node --env-file-if-exists=.env.local scripts/db.mjs status",
+    "bank": "node --env-file-if-exists=.env.local scripts/bank.mjs",
     "db:setup": "npm run db:env && npm run db:up && npm run db:migrate && npm run db:seed",
     "test:db": "node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run --config vitest.integration.config.ts",
     "docker:up": "docker compose --env-file .env.local --profile app up --build -d --wait",
