@@ -27,7 +27,7 @@ npm run db:migrate
 npm run bank:generate
 
 # 위 출력의 jobId를 복사한다. 실제 유료 요청 1회를 실행하는 명령
-npm run bank:generate -- --execute --job <jobId>
+npm run bank:generate -- --subcategory science-earth --execute --job <jobId>
 
 # 결과·실패·예약 상태 조회
 npm run bank:generate -- --status <jobId>
@@ -39,18 +39,28 @@ npm run bank -- show <문제UUID>
 npm run bank -- publish <문제UUID> <검수자> "정답·보기·해설을 출처와 대조함"
 ```
 
-기본은 과학·보통 난이도 3문제다. 최대 5문제이며, 한 실행에서 요청을 1번만 보낸다. 출력 형식 오류·중복 때문에 목표 수를 채우지 못해도 추가 호출하지 않는다.
+옵션 없는 dry-run의 기본은 과학 / 지구·기후 / 보통 난이도 3문제다. 실제 실행이나 생성 옵션을 지정할 때는 `--subcategory`가 필수다. `--list-subcategories`로 9개 대분류의 49개 소분류 ID와 현재 출제 카테고리 매핑을 확인한다. 최대 5문제이며, 한 실행에서 요청을 1번만 보낸다. 출력 형식 오류·중복 때문에 목표 수를 채우지 못해도 추가 호출하지 않는다.
 
 ```sh
-npm run bank:generate -- --category history --difficulty hard --count 5 --evidence /private/history-facts.json
-npm run bank:generate -- --category history --difficulty hard --count 5 --evidence /private/history-facts.json --execute --job <앞서_확인한_jobId>
+npm run bank:generate -- --category history --subcategory history-korea --difficulty hard --count 5 --evidence /private/history-facts.json
+npm run bank:generate -- --category history --subcategory history-korea --difficulty hard --count 5 --evidence /private/history-facts.json --execute --job <앞서_확인한_jobId>
 ```
 
 같은 jobId로 재실행하면 저장된 상태만 반환한다. 입력·자료·모델이 달라졌다면 거부한다. 실패하거나 `reserved`에 남은 작업을 새 ID로 무심코 재실행하면 또 비용이 들 수 있다. 상태와 OpenAI 사용량을 확인한 뒤 의도적으로 새 작업을 시작한다.
 
+## 상식 품질 기준과 소분류
+
+`bank.evidence.v2`와 개발 미리보기의 `quiz.v2`는 같은 품질 지침을 공유한다. 계산·공식 대입·단위 환산, 자격증·전공 시험형 암기, 지엽적인 연도·인명·수치·업무 절차를 제외한다. 어려움은 익숙한 주제의 오해나 개념 연결로 만들며 희귀한 사실로 난도를 높이지 않는다. 상세 기준은 [출제 품질 정책](question-quality.md)을 따른다.
+
+생성 입력의 소분류는 서버에서 검증하며 현재 카테고리와 맞지 않으면 예산 예약과 API 호출 전에 거절한다. 서버가 정한 대분류·소분류를 프롬프트에 전달하고 초안의 `provenance.taxonomy`에 자동 저장한다. 모델이 분류를 새로 만들어내지 않는다. 내보내기·가져오기에서도 분류와 생성 메타데이터를 유지한다.
+
+자료로 좋은 상식 문제를 요청 수만큼 만들 수 없으면 빈 결과를 반환하도록 지시한다. 이 경우 `INSUFFICIENT_QUALITY_MATERIAL`로 실패를 기록하고 사용한 토큰만 집계하며 추가 호출하지 않는다. 프롬프트는 의미적 품질을 보장하는 자동 필터가 아니므로 게시 전 사람의 검수는 여전히 필요하다.
+
+기본 자료는 [지구·기후](examples/general-knowledge-earth.json)다. [요리·조리 원리](examples/general-knowledge-cooking.json), [국가·수도](examples/general-knowledge-capitals.json) 자료도 새 기준으로 준비했다. 이전 자료 묶음의 전문적인 세부 사실을 그대로 재사용하지 않는다.
+
 ## 참고 자료와 검수
 
-[기본 과학 자료](examples/science-evidence.json)는 2026-10-06에 NASA의 목성·화성·수성 자료를 대조해 작성한 짧은 사실 요약이다. 자동 크롤링이나 유료 웹 검색은 하지 않는다. [역사 자료](examples/history-evidence.json)와 [지리 자료](examples/geography-evidence.json)도 준비했다. 분류 기준은 [문제 분류 v1](question-taxonomy.md)을 따른다. 다른 주제는 운영자가 확인한 자료를 같은 형식으로 제공한다.
+[이전 과학 자료](examples/science-evidence.json)는 2026-10-06에 NASA의 목성·화성·수성 자료를 대조해 작성한 짧은 사실 요약이다. 자동 크롤링이나 유료 웹 검색은 하지 않는다. [역사 자료](examples/history-evidence.json)와 [지리 자료](examples/geography-evidence.json)도 준비했다. 분류 기준은 [문제 분류 v1](question-taxonomy.md)을 따른다. 다른 주제는 운영자가 확인한 자료를 같은 형식으로 제공한다.
 
 ```json
 [
@@ -108,3 +118,14 @@ AI는 자료 ID만 반환하고 서버가 원본 출처 URL을 연결한다. 알
 - 생성 당시 입력·토큰·문항 ID는 `generation_jobs`, 편집 분류와 검토 내역은 `bank_questions.provenance.taxonomy` 및 `editorialReview`에 남긴다. 원본 생성의 `verificationStatus: unreviewed` 메타데이터와 후속 검수 기록은 구분한다.
 - 임시 계정 2개로 15개 조건을 모두 출제하여 새 45개와 기존 16개, 총 61문항의 정답 비공개·보기 섞기·채점·해설을 검증했다. 검증 중 AI 호출은 없었고 테스트 계정과 풀이 기록은 정리했다.
 - **로컬 DB에만 게시했다. Render DB에는 복사하지 않았다.** Git에는 자료 요약과 작업 기록만 저장하며, 생성 문항·정답·키는 포함하지 않는다. 배포나 CI가 이 생성 작업을 다시 실행하지 않는다.
+
+## 상식 품질 기준 재정비 (2026-10-06)
+
+사용자 피드백에 따라 계산·시험형 풀이·지엽적 암기를 제외하는 공통 프롬프트와 49개 소분류 선택을 적용했다. 위의 61개 게시 수는 이 재검수 이전 기록이다.
+
+- 기존 로컬 게시 문항 25개를 `paused`로 전환하고 개별 사유를 기록했다. 새 출제에서 제외하며 기존 풀이 스냅샷은 변경하지 않았다.
+- 지구·기후, 요리·조리 원리, 국가·수도에서 각 2개씩 총 6개를 Astra로 생성했다. 계절 개념의 반복 문항은 같은 출처의 낮밤 원리로 수정했고, 제빵 문항은 용어 암기보다 조리 행동의 이유를 묻도록 편집했다. 발효와 베이킹파우더의 차이는 미생물 관여 여부로 명확하게 표현했다. 출처·보기·상식성을 확인한 뒤 게시했다.
+- 실제 요청 3회, 자동 재시도 없음. 이번 보수적 추정 비용 $0.105488, 해당 월 누적 $0.760043 / $4. 실제 청구서는 별도다.
+- 현재 로컬 은행은 게시 42개, 중단 25개다. 재검수로 비어 있는 주제·난이도는 지엽적인 문제로 억지로 채우지 않았다.
+- 로컬 Docker 앱에서 임시 계정으로 12개 출제 조건과 게시 42개 전부를 검증했다. 새 6개 출제·채점, 중단 문항 제외, 제출 전 정답 비공개, 보기 섞기, 해설을 확인했고 추가 AI 호출은 없었다. 테스트 계정은 정리했다.
+- 변경된 문제 데이터는 **로컬 DB에만 적용**했다. Render DB 데이터는 자동 동기화되지 않는다. 생성 본문·정답은 Git에 포함하지 않았다.

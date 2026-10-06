@@ -16,6 +16,12 @@
 
 `일반 상식`은 장기적으로 독립 분야 대신 모든 분류에서 출제하는 `골고루 풀기` 모드로 전환한다.
 
+## 생성 시 소분류 선택
+
+`src/features/quiz/domain/taxonomy.ts`가 위 9개 대분류·49개 소분류의 실행 가능한 목록이다. `npm run bank:generate -- --list-subcategories`로 ID를 확인한다. 예: `science-earth`(과학·자연 / 지구·기후), `lifestyle-cooking`(생활·음식 / 요리·조리 원리), `geography-countries`(지리·세계 / 국가·수도).
+
+운영자 생성에는 `subcategory`가 필수이고 `category`와의 매핑을 검증한다. 기술·사회·인문·생활·스포츠는 현재 `general` 필터로 출제한다. 새 초안에는 `{version, subcategoryId, major, minor, tags}`를 서버에서 자동 기록한다. 기존 문항의 이전 편집 분류는 보존한다. 소분류는 전문가 시험 범위를 뜻하지 않으며 모든 분야에 [상식 품질 기준](question-quality.md)을 동일하게 적용한다.
+
 ## 현재 적용 범위
 
 대표 문제 6개와 추가 문제 45개를 생성하고 `bank_questions.provenance.taxonomy`에 `{version, major, minor, tags}`로 편집 분류를 기록했다. 새 데이터의 major는 위 ID를 사용하고 minor는 표의 표시 이름을 사용한다. 기존 생성 이력은 그대로 보존한다.
