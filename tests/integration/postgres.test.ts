@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { Pool, Client } from "pg";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { generateQuiz, getQuizPreview } from "@/features/quiz/application/generate-quiz";
 import { PostgresQuizRepository } from "@/server/db/quiz-repository";
 import { MockQuizGenerator } from "@/server/ai/mock-quiz-generator";
@@ -10,6 +10,8 @@ import { betterAuth } from "better-auth";
 import { authOptions } from "@/server/auth/options";
 import { consumePreviewQuota } from "@/server/db/quiz-history";
 import { PostgresPlayRepository, consumePlayQuota } from '@/server/db/play-repository';
+import { generateBankDrafts } from '@/server/db/generation-jobs';
+import { BankGenerationError, type BankResult } from '@/server/ai/bank-generation';
 
 const execute = promisify(execFile);
 const testDatabase = `quizquiz_test_${randomUUID().replaceAll("-", "")}`;
@@ -135,7 +137,7 @@ describe("PostgreSQL persistence", () => {
     await command("seed");
     await command("seed");
     const migrations = await pool.query("SELECT count(*)::int AS count FROM quizquiz.schema_migrations");
-    expect(migrations.rows[0].count).toBe(5);
+    expect(migrations.rows[0].count).toBe(6);
     const sample = await repository.findById("98c2d9a0-6990-4d57-8c81-b31704315a48");
     expect(sample?.questions).toHaveLength(3);
     expect(sample?.metadata.verificationStatus).toBe("unreviewed");
@@ -293,6 +295,9 @@ describe('question bank, play and community feedback', () => {
       await expect(cli('publish',id,'tester','verified')).rejects.toThrow();
       q.sources=[{title:'Example source',url:'https://example.com'}];
       await writeFile(file,JSON.stringify([q])); await cli('import',file); await cli('publish',id,'tester','test review');
+      const shown = JSON.parse((await cli('show',id)).stdout);
+      expect(shown.correct_answer_index).toBe(q.correctAnswerIndex);
+      expect(shown.explanation).toBe(q.explanation);
       await expect(cli('import',file)).rejects.toThrow();
       await cli('retire',id,'tester','test finished');
       await expect(cli('pause',id,'tester','cannot restore retired content')).rejects.toThrow();
@@ -302,5 +307,77 @@ describe('question bank, play and community feedback', () => {
       await cli('publish','70000000-0000-4000-8000-000000000001','tester','report review fixture');
       expect((await pool.query("SELECT count(*)::int AS n FROM quizquiz.question_reports WHERE status='open'")).rows[0].n).toBe(0);
     } finally { await rm(temp,{recursive:true,force:true}); }
+  });
+});
+
+describe('operator AI generation ledger', () => {
+  const input = { category: 'science', difficulty: 'medium', count: 1 } as const;
+  const evidence = [{ id:'test', title:'Fixture evidence', url:'https://example.com/fact', facts:'통합 테스트 자료' }];
+  function output(text = `생성 테스트 ${randomUUID()}`): BankResult {
+    return { quiz:{questions:[{question:text,options:['A','B','C','D'],correctAnswerIndex:0,explanation:'통합 테스트 해설'}]},
+      sources:[[{title:evidence[0].title,url:evidence[0].url}]], usage:{inputTokens:100,outputTokens:200,responseId:'resp_fixture'},
+      metadata:{provider:'openai',model:'gpt-6-astra',promptVersion:'bank.evidence.v1',verificationStatus:'unreviewed'} };
+  }
+  function options(generate = vi.fn().mockResolvedValue(output()), jobId = randomUUID()) {
+    return { pool,jobId,input,evidence,model:'gpt-6-astra',monthlyMicros:100_000_000,generator:{generate} };
+  }
+  it('blocks disabled generation before sending a paid request', async () => {
+    const job = { ...options(), monthlyMicros:0 };
+    await expect(generateBankDrafts(job)).rejects.toMatchObject({code:'BUDGET_EXCEEDED'});
+    expect(job.generator.generate).not.toHaveBeenCalled();
+    expect((await pool.query('SELECT id FROM quizquiz.generation_jobs WHERE id=$1',[job.jobId])).rowCount).toBe(0);
+  });
+  it('saves drafts and token usage atomically; concurrent reruns send one request', async () => {
+    const job=options();
+    const results=await Promise.all([generateBankDrafts(job),generateBankDrafts(job)]);
+    expect(job.generator.generate).toHaveBeenCalledOnce();
+    const saved=await generateBankDrafts(job);
+    expect(saved.status).toBe('completed'); expect(saved.chargedUsd).toBe(0.01125);
+    expect(saved.questionIds).toHaveLength(1);
+    expect(results.some(r=>r.status==='completed')).toBe(true);
+    const question=(await pool.query('SELECT status,sources,provenance,reviewed_at FROM quizquiz.bank_questions WHERE id=$1',[saved.questionIds[0]])).rows[0];
+    expect(question.status).toBe('draft'); expect(question.reviewed_at).toBeNull();
+    expect(question.sources).toEqual([{title:evidence[0].title,url:evidence[0].url}]);
+    expect(question.provenance.generationJobId).toBe(job.jobId);
+    await expect(generateBankDrafts({...job,input:{...input,count:2}})).rejects.toMatchObject({code:'JOB_INPUT_CHANGED'});
+  });
+  it('skips existing exact questions without extra calls or publishing', async () => {
+    const result=output();
+    const first=await generateBankDrafts(options(vi.fn().mockResolvedValue(result)));
+    const second=await generateBankDrafts(options(vi.fn().mockResolvedValue(result)));
+    expect(first.questionIds).toHaveLength(1); expect(second.questionIds).toHaveLength(0); expect(second.skipped).toBe(1);
+    expect(second.chargedUsd).toBe(0.01125);
+  });
+  it('reserves shared monthly budget atomically for concurrent CLI processes', async () => {
+    const spent=Number((await pool.query('SELECT COALESCE(sum(charged_micros),0) AS used FROM quizquiz.generation_jobs')).rows[0].used);
+    const generate=vi.fn().mockRejectedValue(new BankGenerationError('AI_UNAVAILABLE'));
+    const jobs=[options(generate),options(generate),options(generate)].map(job=>({...job,monthlyMicros:spent+500000}));
+    const results=await Promise.allSettled(jobs.map(generateBankDrafts));
+    expect(generate).toHaveBeenCalledOnce();
+    expect(results.filter(r=>r.status==='rejected')).toHaveLength(2);
+    const finished=results.find(r=>r.status==='fulfilled');
+    if(finished?.status!=='fulfilled') throw new Error('missing completed job');
+    expect(finished.value).toMatchObject({status:'failed',chargedUsd:0.5,errorCode:'AI_UNAVAILABLE'});
+    const retry=await generateBankDrafts(jobs.find(job=>job.jobId===finished.value.id)!);
+    expect(retry.status).toBe('failed'); expect(generate).toHaveBeenCalledOnce();
+  });
+  it('records consumed tokens when output is invalid and preserves reservations on storage failure', async () => {
+    const invalid=options(vi.fn().mockRejectedValue(new BankGenerationError('INVALID_OUTPUT',{inputTokens:100,outputTokens:200,responseId:'resp_invalid'})));
+    const failed=await generateBankDrafts(invalid);
+    expect(failed).toMatchObject({status:'failed',chargedUsd:0.01125,errorCode:'INVALID_OUTPUT'});
+    const malformed=output(); malformed.quiz.questions[0].correctAnswerIndex=99;
+    const storage=options(vi.fn().mockResolvedValue(malformed));
+    await expect(generateBankDrafts(storage)).rejects.toThrow();
+    const held=await generateBankDrafts(storage);
+    expect(held).toMatchObject({status:'reserved',chargedUsd:0.5,questionIds:[]});
+    expect(storage.generator.generate).toHaveBeenCalledOnce();
+    expect((await pool.query('SELECT id FROM quizquiz.bank_questions WHERE question=$1',[malformed.quiz.questions[0].question])).rowCount).toBe(0);
+  });
+  it('runs the real Node CLI dry run without a key, network or database and rejects accidental execution', async () => {
+    const args=['--conditions=react-server','scripts/generate-bank.ts'];
+    const env={...process.env,OPENAI_API_KEY:'',OPENAI_MODEL:'gpt-6-astra',AI_MONTHLY_BUDGET_USD:'0',DATABASE_URL:'postgresql://invalid:invalid@127.0.0.1:1/missing'};
+    const {stdout}=await execute(process.execPath,args,{env,timeout:15000});
+    expect(JSON.parse(stdout)).toMatchObject({mode:'dry-run',count:3,monthlyBudgetUsd:0,reservationUsd:0.5});
+    await expect(execute(process.execPath,[...args,'--execute'],{env,timeout:15000})).rejects.toThrow();
   });
 });

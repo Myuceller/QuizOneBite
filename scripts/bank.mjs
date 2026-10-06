@@ -14,8 +14,8 @@ const question = z.object({
   provenance: z.object({ provider: z.string().max(100), model: z.string().max(100).optional(), promptVersion: z.string().max(100).optional() }).default({ provider: 'manual-import' }),
 }).strict();
 const [action, target, reviewer, note] = process.argv.slice(2);
-if (!['import','queue','publish','pause','retire','export'].includes(action) || !process.env.DATABASE_URL) {
-  console.error('DATABASE_URL required. Usage: npm run bank -- import file.json | queue | publish|pause|retire UUID reviewer "review note" | export file.json');
+if (!['import','queue','show','publish','pause','retire','export'].includes(action) || !process.env.DATABASE_URL) {
+  console.error('DATABASE_URL required. Usage: npm run bank -- import file.json | queue | show UUID | publish|pause|retire UUID reviewer "review note" | export file.json');
   process.exit(1);
 }
 let imported;
@@ -42,6 +42,11 @@ try {
       [id,q.category,q.difficulty,q.question,q.options,q.correctAnswerIndex,q.explanation,JSON.stringify(q.sources),JSON.stringify(q.provenance)]);
       console.log(`Draft: ${id}`);
     }
+  } else if (action === 'show') {
+    const id = z.uuid().parse(target);
+    const row = await client.query('SELECT * FROM quizquiz.bank_questions WHERE id=$1', [id]);
+    if (!row.rowCount) throw new Error('Question not found.');
+    console.log(JSON.stringify(row.rows[0], null, 2));
   } else if (action === 'queue') {
     const rows = await client.query(`SELECT b.id,b.question,b.status,b.sources,b.review_note,
       (SELECT count(*)::int FROM quizquiz.question_reports r WHERE r.question_id=b.id AND r.status='open') AS open_reports,

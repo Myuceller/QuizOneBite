@@ -6,7 +6,7 @@ Next.js App Router·React·TypeScript와 PostgreSQL로 만드는 상식 퀴즈 �
 
 ```mermaid
 flowchart LR
-  IMPORT[운영 CLI로 초안 가져오기] --> REVIEW[출처 검토 후 게시]
+  IMPORT[운영 CLI로 AI 생성·초안 가져오기] --> REVIEW[출처 검토 후 게시]
   REVIEW --> BANK[(PostgreSQL 문제 은행)]
   UI[React 화면] --> API[로그인·요청 검증]
   API --> SELECT[미노출·평가·주제 기반 출제]
@@ -59,7 +59,7 @@ flowchart LR
 
 ## 후속 작업
 
-- 예산 상한과 사용량 기록을 갖춘 운영자 전용 AI 일괄 생성, 초안 은행 연결.
+- 소량 생성의 실제 품질·사용량을 검증한 뒤 Batch API 등 대량 처리 검토. 현재 운영자 전용 생성·월 예산 예약·초안 저장은 [구현됨](ai-generation.md).
 - 출처 검토·중복 확인을 거쳐 문제 수 확장, 실제 정답률로 난이도 보정.
 - 이메일 인증·비밀번호 복구, 다중 계정 평가 조작 대응.
 - 운영 DB 백업·복구와 운영 환경 출시. 현재 무료 staging의 DB 만료 기한 관리.
