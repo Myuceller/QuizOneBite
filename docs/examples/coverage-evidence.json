@@ -1,0 +1,367 @@
+{
+  "verifiedOn": "2026-10-06",
+  "note": "출처에서 확인한 사실의 자체 요약. 난이도별 자료를 분리해 중복을 줄인다. 생성 결과는 DB 초안에서 별도 검수한다.",
+  "batches": [
+    {
+      "category": "general",
+      "difficulty": "easy",
+      "evidence": [
+        {
+          "id": "si-general-easy-0",
+          "title": "NIST · SI Units",
+          "url": "https://www.nist.gov/pml/owm/metric-si/si-units",
+          "facts": "국제단위계(SI)에서 질량의 기본 단위는 킬로그램(kg)이다. 그램이 아니라 킬로그램을 기본 단위로 삼는다."
+        },
+        {
+          "id": "isbn-general-easy-1",
+          "title": "International ISBN Agency · What is an ISBN?",
+          "url": "https://www.isbn-international.org/index.php/content/what-isbn/10",
+          "facts": "ISBN은 국제표준도서번호이며 책의 제목·판·제품 형태를 구분하는 식별자다. 정기적으로 발행되는 신문이나 잡지 자체의 식별 체계와 구별된다."
+        },
+        {
+          "id": "un-general-easy-2",
+          "title": "UN · Official Languages",
+          "url": "https://www.un.org/en/our-work/official-languages",
+          "facts": "유엔의 공식 언어 6개는 아랍어, 중국어, 영어, 프랑스어, 러시아어, 스페인어이다. 이 목록에 독일어와 일본어는 들어 있지 않다."
+        }
+      ]
+    },
+    {
+      "category": "general",
+      "difficulty": "medium",
+      "evidence": [
+        {
+          "id": "si-general-medium-0",
+          "title": "NIST · SI Units",
+          "url": "https://www.nist.gov/pml/owm/metric-si/si-units",
+          "facts": "SI에서 광도의 기본 단위는 칸델라(cd)이다. 몰은 물질량, 켈빈은 열역학적 온도, 암페어는 전류의 기본 단위다."
+        },
+        {
+          "id": "isbn-general-medium-1",
+          "title": "International ISBN Agency · What is an ISBN?",
+          "url": "https://www.isbn-international.org/index.php/content/what-isbn/10",
+          "facts": "같은 내용의 책이라도 페이퍼백, EPUB, PDF 등 서로 다른 제품 형태는 각각 별도로 ISBN을 부여해 구분한다."
+        },
+        {
+          "id": "un-general-medium-2",
+          "title": "UN · Official Languages",
+          "url": "https://www.un.org/en/our-work/official-languages",
+          "facts": "유엔 대표가 공식 언어가 아닌 언어로 연설하려면 대표단이 공식 언어 중 하나로 통역 또는 번역문을 제공해야 한다."
+        }
+      ]
+    },
+    {
+      "category": "general",
+      "difficulty": "hard",
+      "evidence": [
+        {
+          "id": "si-general-hard-0",
+          "title": "NIST · SI Units",
+          "url": "https://www.nist.gov/pml/owm/metric-si/si-units",
+          "facts": "SI의 7개 기본 단위는 미터, 킬로그램, 초, 암페어, 켈빈, 몰, 칸델라다. 기본 단위를 조합해 유도 단위를 만든다. 면적의 제곱미터와 속도의 미터 매 초는 유도 단위의 예다."
+        },
+        {
+          "id": "isbn-general-hard-1",
+          "title": "International ISBN Agency · What is an ISBN?",
+          "url": "https://www.isbn-international.org/index.php/content/what-isbn/10",
+          "facts": "ISBN-13의 맨 마지막 한 자리는 나머지 숫자를 수학적으로 검증하는 체크 숫자다. 계산에는 앞의 숫자들에 1과 3의 가중치를 번갈아 적용하는 모듈로 10 방식이 쓰인다."
+        },
+        {
+          "id": "un-work-general-hard-2",
+          "title": "UN Secretary-General · Multilingualism",
+          "url": "https://www.un.org/sg/en/multilingualism/index.shtml",
+          "facts": "유엔의 공식 언어는 6개이지만 유엔 사무국의 실무 언어는 영어와 프랑스어다. 공식 언어 전체와 사무국의 실무 언어를 구분해야 한다."
+        }
+      ]
+    },
+    {
+      "category": "science",
+      "difficulty": "easy",
+      "evidence": [
+        {
+          "id": "venus-science-easy-0",
+          "title": "NASA · Venus Facts",
+          "url": "https://science.nasa.gov/venus/venus-facts/",
+          "facts": "금성 대기의 주성분은 이산화탄소이며 두꺼운 대기가 열을 가두는 강한 온실효과를 일으킨다. 구름은 주로 황산으로 이루어져 있다."
+        },
+        {
+          "id": "dna-science-easy-1",
+          "title": "NHGRI · DNA Fact Sheet",
+          "url": "https://www.genome.gov/about-genomics/fact-sheets/Deoxyribonucleic-Acid-Fact-Sheet",
+          "facts": "DNA는 생물의 유전 정보를 담는 분자이며 생식 과정에서 그 정보가 다음 세대로 전달된다."
+        },
+        {
+          "id": "tides-science-easy-2",
+          "title": "NOAA · Spring and Neap Tides",
+          "url": "https://oceanservice.noaa.gov/facts/springtide.html",
+          "facts": "조석은 지구와 달·태양의 상호작용에서 달과 태양의 중력이 바닷물을 당기는 것과 관련된다."
+        }
+      ]
+    },
+    {
+      "category": "science",
+      "difficulty": "medium",
+      "evidence": [
+        {
+          "id": "dna-science-medium-0",
+          "title": "NHGRI · DNA Fact Sheet",
+          "url": "https://www.genome.gov/about-genomics/fact-sheets/Deoxyribonucleic-Acid-Fact-Sheet",
+          "facts": "DNA의 네 염기는 아데닌(A), 타이민(T), 구아닌(G), 사이토신(C)이다. 이중 가닥에서 A는 T와, C는 G와 짝을 이룬다."
+        },
+        {
+          "id": "venus-science-medium-1",
+          "title": "NASA · Venus Facts",
+          "url": "https://science.nasa.gov/venus/venus-facts/",
+          "facts": "금성은 지구와 반대 방향으로 매우 천천히 자전한다. 금성 표면의 관측자에게 태양은 서쪽에서 떠서 동쪽으로 진다."
+        },
+        {
+          "id": "tides-science-medium-2",
+          "title": "NOAA · Spring and Neap Tides",
+          "url": "https://oceanservice.noaa.gov/facts/springtide.html",
+          "facts": "조차가 작아지는 조금(neap tide)은 상현달·하현달 무렵 나타난다. 지구에서 본 태양과 달의 방향이 직각을 이루어 두 천체의 조석 효과가 일부 상쇄된다."
+        }
+      ]
+    },
+    {
+      "category": "science",
+      "difficulty": "hard",
+      "evidence": [
+        {
+          "id": "dna-science-hard-0",
+          "title": "NHGRI · DNA Fact Sheet",
+          "url": "https://www.genome.gov/about-genomics/fact-sheets/Deoxyribonucleic-Acid-Fact-Sheet",
+          "facts": "이중 가닥 DNA는 A와 T, C와 G가 각각 짝을 이룬다. 따라서 두 가닥을 합친 전체 염기 구성에서 A와 T의 수는 같고 C와 G의 수도 같다. 네 염기의 비율 합계는 100%이다."
+        },
+        {
+          "id": "venus-science-hard-1",
+          "title": "NASA · Venus Facts",
+          "url": "https://science.nasa.gov/venus/venus-facts/",
+          "facts": "금성의 자전 주기는 약 243지구일이고 태양을 한 바퀴 도는 공전 주기는 약 225지구일이다. 이 자전 주기는 태양의 연속 남중을 기준으로 하는 태양일과 구별된다."
+        },
+        {
+          "id": "waves-science-hard-2",
+          "title": "USGS · P-wave and S-wave paths through the earth",
+          "url": "https://www.usgs.gov/media/images/p-wave-and-s-wave-paths-through-earth",
+          "facts": "지진의 P파는 고체와 액체를 모두 통과하지만 S파는 액체를 통과하지 못한다. 이 차이는 지구 내부 구조를 연구하는 단서다."
+        }
+      ]
+    },
+    {
+      "category": "history",
+      "difficulty": "easy",
+      "evidence": [
+        {
+          "id": "haeinsa-history-easy-0",
+          "title": "UNESCO · Haeinsa Temple Janggyeong Panjeon",
+          "url": "https://whc.unesco.org/en/list/737",
+          "facts": "해인사 장경판전은 불교 경전인 팔만대장경 목판을 보관하는 건물이다. 인쇄용 목판과 그것을 보관하는 건물은 서로 구별된다."
+        },
+        {
+          "id": "magna-history-easy-1",
+          "title": "US National Archives · Magna Carta",
+          "url": "https://www.archives.gov/exhibits/featured-documents/magna-carta",
+          "facts": "1215년 잉글랜드의 존 왕은 러니미드에서 마그나 카르타에 자신의 인장을 찍었다. 귀족들과의 갈등을 배경으로 만들어진 문서다."
+        },
+        {
+          "id": "rosetta-history-easy-2",
+          "title": "British Museum · Rosetta Stone, EA24",
+          "url": "https://www.britishmuseum.org/collection/object/Y_EA24",
+          "facts": "로제타석은 고대 이집트 프톨레마이오스 왕조 시기의 유물로 기원전 196년에 프톨레마이오스 5세에 관한 사제들의 칙령을 새겼다."
+        }
+      ]
+    },
+    {
+      "category": "history",
+      "difficulty": "medium",
+      "evidence": [
+        {
+          "id": "haeinsa-history-medium-0",
+          "title": "UNESCO · Haeinsa Temple Janggyeong Panjeon",
+          "url": "https://whc.unesco.org/en/list/737",
+          "facts": "고려의 팔만대장경 목판은 1237~1248년에 새겨졌다. 몽골의 침략으로부터 나라를 지키는 데 부처의 권능을 빌려 호소하는 의미가 있었다."
+        },
+        {
+          "id": "rosetta-history-medium-1",
+          "title": "British Museum · Rosetta Stone, EA24",
+          "url": "https://www.britishmuseum.org/collection/object/Y_EA24",
+          "facts": "로제타석에는 같은 칙령이 이집트 상형문자, 일상용 이집트 문자 데모틱, 그리스 문자로 새겨졌다. 그리스어가 당시 행정 언어였고 데모틱은 일상적으로 사용하던 문자였다."
+        },
+        {
+          "id": "magna-history-medium-2",
+          "title": "US National Archives · Magna Carta",
+          "url": "https://www.archives.gov/exhibits/featured-documents/magna-carta",
+          "facts": "마그나 카르타는 13세기 귀족들이 왕에 맞서 자신들의 권리와 재산을 지키려는 목적에서 작성됐다. 처음부터 모든 사람의 보통선거권을 보장한 문서는 아니며, 오늘날의 민주주의와 그대로 동일시하면 안 된다."
+        }
+      ]
+    },
+    {
+      "category": "history",
+      "difficulty": "hard",
+      "evidence": [
+        {
+          "id": "haeinsa-history-hard-0",
+          "title": "UNESCO · Haeinsa Temple Janggyeong Panjeon",
+          "url": "https://whc.unesco.org/en/list/737",
+          "facts": "팔만대장경 목판은 13세기(1237~1248년)에 새겨졌고 현재의 해인사 장경판전 건물은 15세기 조선 초기 양식으로 지어졌다. 두 대상의 제작·건립 시기는 다르다."
+        },
+        {
+          "id": "rosetta-history-hard-1",
+          "title": "British Museum · Rosetta Stone, EA24",
+          "url": "https://www.britishmuseum.org/collection/object/Y_EA24",
+          "facts": "로제타석에 새겨진 칙령은 프톨레마이오스 5세에 관한 내용이다. 비석은 프톨레마이오스 왕조 시대의 기원전 196년 유물이며 재료는 화강섬록암(granodiorite)이다."
+        },
+        {
+          "id": "magna-history-hard-2",
+          "title": "US National Archives · Magna Carta",
+          "url": "https://www.archives.gov/exhibits/featured-documents/magna-carta",
+          "facts": "존 왕의 1215년 마그나 카르타 합의는 약 10주 뒤 교황 인노첸시오 3세에 의해 무효화됐다. 존 왕 사후 여러 차례 재발행되었고 1297년판은 잉글랜드의 공식 법령집에 포함됐다."
+        }
+      ]
+    },
+    {
+      "category": "geography",
+      "difficulty": "easy",
+      "evidence": [
+        {
+          "id": "canyon-geography-easy-0",
+          "title": "NPS · Grand Canyon Rivers and Streams",
+          "url": "https://www.nps.gov/grca/learn/nature/rivers.htm",
+          "facts": "미국 그랜드캐니언을 흐르는 강은 콜로라도강이다. 그랜드캐니언을 지나는 물의 상당 부분은 로키산맥 지역에서 온다."
+        },
+        {
+          "id": "kilimanjaro-geography-easy-1",
+          "title": "UNESCO · Kilimanjaro National Park",
+          "url": "https://whc.unesco.org/en/list/403/",
+          "facts": "킬리만자로는 아프리카에서 가장 높은 산이며 탄자니아에 있다."
+        },
+        {
+          "id": "reef-geography-easy-2",
+          "title": "UNESCO · Great Barrier Reef",
+          "url": "https://whc.unesco.org/en/list/154/",
+          "facts": "그레이트배리어리프는 호주 북동부 해안의 거대한 산호초 지대로 유네스코 세계유산이다."
+        }
+      ]
+    },
+    {
+      "category": "geography",
+      "difficulty": "medium",
+      "evidence": [
+        {
+          "id": "estuary-geography-medium-0",
+          "title": "NOAA · What is an estuary?",
+          "url": "https://oceanservice.noaa.gov/facts/estuary.html",
+          "facts": "강물이 바다와 만나는 일반적인 하구역에서는 담수와 해수가 섞여 기수가 만들어진다. 이러한 환경에 적응한 동식물이 산다. 모든 하구역이 반드시 염수라는 뜻은 아니다."
+        },
+        {
+          "id": "fjord-geography-medium-1",
+          "title": "NPS · U-Shaped Valleys, Fjords, and Hanging Valleys",
+          "url": "https://www.nps.gov/articles/ushapedvalleysfjordshangingvalleys.htm",
+          "facts": "피오르는 빙하가 깎은 깊고 가파른 골짜기에 바닷물이 들어찬 지형이다. 빙하의 침식이 핵심이며 바람이 사막 모래를 쌓아 만드는 지형이 아니다."
+        },
+        {
+          "id": "plates-geography-medium-2",
+          "title": "USGS · Understanding plate motions",
+          "url": "https://pubs.usgs.gov/gip/dynamic/understanding.html?feature=oembed",
+          "facts": "히말라야산맥은 인도판과 유라시아판의 충돌과 계속되는 수렴으로 지각이 두꺼워지고 솟아오르며 형성됐다."
+        }
+      ]
+    },
+    {
+      "category": "geography",
+      "difficulty": "hard",
+      "evidence": [
+        {
+          "id": "plates-geography-hard-0",
+          "title": "USGS · Understanding plate motions",
+          "url": "https://pubs.usgs.gov/gip/dynamic/understanding.html?feature=oembed",
+          "facts": "아이슬란드는 대서양 중앙 해령에 걸쳐 있다. 이곳에서는 북아메리카판과 유라시아판이 서로 벌어지는 발산 경계를 육지에서 관찰할 수 있다."
+        },
+        {
+          "id": "ridge-geography-hard-1",
+          "title": "NOAA · The longest mountain range on Earth",
+          "url": "https://oceanservice.noaa.gov/facts/midoceanridge.html",
+          "facts": "지구에서 가장 긴 산맥 체계는 대부분 바닷속에 있는 중앙 해령 체계다. 전체 길이가 약 65,000km이며 판이 벌어지는 곳에서 마그마가 올라와 새 해양 지각이 만들어진다."
+        },
+        {
+          "id": "gyre-geography-hard-2",
+          "title": "NOAA · What is a gyre?",
+          "url": "https://oceanservice.noaa.gov/facts/gyre.html",
+          "facts": "대양의 주요 아열대 환류 5개는 북태평양, 남태평양, 북대서양, 남대서양, 인도양 아열대 환류다. 환류는 회전하는 대규모 해류 체계이며 해양 쓰레기 자체를 뜻하는 말은 아니다."
+        }
+      ]
+    },
+    {
+      "category": "culture",
+      "difficulty": "easy",
+      "evidence": [
+        {
+          "id": "pansori-culture-easy-0",
+          "title": "UNESCO · Pansori epic chant",
+          "url": "https://ich.unesco.org/en/RL/pansori-epic-chant-00070",
+          "facts": "판소리는 소리꾼 한 명과 북을 치는 고수 한 명이 함께 이야기를 풀어내는 음악 공연 형식이다."
+        },
+        {
+          "id": "met-culture-easy-1",
+          "title": "The Met · Impressionism: Art and Modernity",
+          "url": "https://www.metmuseum.org/essays/impressionism-art-and-modernity",
+          "facts": "클로드 모네의 작품 인상, 해돋이는 1874년 전시되었고 인상주의라는 이름이 생기는 계기가 됐다."
+        },
+        {
+          "id": "opera-culture-easy-2",
+          "title": "UNESCO · Sydney Opera House",
+          "url": "https://whc.unesco.org/en/list/166/",
+          "facts": "시드니 오페라하우스는 호주 시드니 항구에 있는 공연장으로 1973년에 개관했다. 조개껍데기 같은 일련의 지붕이 특징이다."
+        }
+      ]
+    },
+    {
+      "category": "culture",
+      "difficulty": "medium",
+      "evidence": [
+        {
+          "id": "pansori-culture-medium-0",
+          "title": "UNESCO · Pansori epic chant",
+          "url": "https://ich.unesco.org/en/RL/pansori-epic-chant-00070",
+          "facts": "판소리의 판은 여러 사람이 모이는 장소, 소리는 노래를 뜻한다. 노래뿐 아니라 말과 몸짓으로 이야기를 전달한다."
+        },
+        {
+          "id": "opera-culture-medium-1",
+          "title": "UNESCO · Sydney Opera House",
+          "url": "https://whc.unesco.org/en/list/166/",
+          "facts": "시드니 오페라하우스의 국제 설계 공모에서 1957년 덴마크 건축가 요른 웃손(Jørn Utzon)의 설계가 선정됐다."
+        },
+        {
+          "id": "met-culture-medium-2",
+          "title": "The Met · Impressionism: Art and Modernity",
+          "url": "https://www.metmuseum.org/essays/impressionism-art-and-modernity",
+          "facts": "인상주의 화가들은 짧고 끊어진 붓질, 섞지 않은 선명한 색, 빛의 효과를 강조했다. 전통적인 완결된 윤곽 묘사와 다른 인상을 주었다."
+        }
+      ]
+    },
+    {
+      "category": "culture",
+      "difficulty": "hard",
+      "evidence": [
+        {
+          "id": "met-culture-hard-0",
+          "title": "The Met · Impressionism: Art and Modernity",
+          "url": "https://www.metmuseum.org/essays/impressionism-art-and-modernity",
+          "facts": "인상주의 화가들의 독립 전시는 1874~1886년 여덟 차례 열렸다. 카미유 피사로는 여덟 전시에 모두 참여한 유일한 화가였고 베르트 모리조는 일곱 차례 참여했다."
+        },
+        {
+          "id": "pansori-culture-hard-1",
+          "title": "UNESCO · Pansori epic chant",
+          "url": "https://ich.unesco.org/en/RL/pansori-epic-chant-00070",
+          "facts": "유네스코는 판소리가 17세기 한국 남서부에서 발전했다고 설명한다. 서민의 구전 전통으로 이어졌고 19세기 말에는 이미 문학적 내용이 정교해지고 도시 상류층에서도 인기를 얻었다."
+        },
+        {
+          "id": "met-culture-hard-2",
+          "title": "The Met · Impressionism: Art and Modernity",
+          "url": "https://www.metmuseum.org/essays/impressionism-art-and-modernity",
+          "facts": "1874년 파리에서 열린 인상주의의 출발점인 전시는 공식 연례 살롱에서 독립한 화가·조각가·판화가들의 단체가 조직했다. 살롱은 미술 아카데미 소속 심사위원이 출품작을 선정하는 제도였다."
+        }
+      ]
+    }
+  ],
+  "reviewNote": "판소리의 상류층 수용 시점을 원문 by which time에 맞춰 후속 검수에서 바로잡았다. 생성 당시 입력 원본은 DB generation_jobs.request에 보존된다."
+}
