@@ -283,16 +283,22 @@ describe('question bank, play and community feedback', () => {
     expect(await consumePlayQuota(users[3],'feedback',pool)).toBe(true);
   });
   it('imports only drafts, prevents publication without sources and supports reviewed recovery', async () => {
-    const { mkdtemp, writeFile, rm } = await import('node:fs/promises');
+    const { mkdtemp, writeFile, readFile, rm } = await import('node:fs/promises');
     const { tmpdir } = await import('node:os'); const { join } = await import('node:path');
     const temp = await mkdtemp(join(tmpdir(),'quiz-bank-'));
     const id = randomUUID(); const file = join(temp,'questions.json');
-    const q = { id,category:'science',difficulty:'medium',question:'Operator import fixture?',options:['a','b','c','d'],correctAnswerIndex:1,explanation:'Fixture only',sources:[] as {title:string;url:string}[] };
+    const q = { id,category:'science',difficulty:'medium',question:'Operator import fixture?',options:['a','b','c','d'],correctAnswerIndex:1,explanation:'Fixture only',sources:[] as {title:string;url:string}[],provenance:{provider:'openai',taxonomy:{version:'v1',subcategoryId:'science-chemistry',major:'science',minor:'화학',tags:[]},verificationStatus:'unreviewed'} };
     const cli = (...args: string[]) => execute(process.execPath,['scripts/bank.mjs',...args],{env:{...process.env,DATABASE_URL:testUrl},timeout:20000});
     try {
       await writeFile(file,JSON.stringify([q])); await cli('import',file);
       expect((await pool.query('SELECT status FROM quizquiz.bank_questions WHERE id=$1',[id])).rows[0].status).toBe('draft');
       await expect(cli('publish',id,'tester','verified')).rejects.toThrow();
+      const exported = join(temp,'export.json');
+      await cli('export',exported);
+      const restored = JSON.parse(await readFile(exported,'utf8')).find((item: {id:string}) => item.id === id);
+      expect(restored.provenance).toEqual(q.provenance);
+      await writeFile(file,JSON.stringify([restored])); await cli('import',file);
+      expect(JSON.parse((await cli('show',id)).stdout).provenance).toEqual(q.provenance);
       q.sources=[{title:'Example source',url:'https://example.com'}];
       await writeFile(file,JSON.stringify([q])); await cli('import',file); await cli('publish',id,'tester','test review');
       const shown = JSON.parse((await cli('show',id)).stdout);
@@ -311,12 +317,12 @@ describe('question bank, play and community feedback', () => {
 });
 
 describe('operator AI generation ledger', () => {
-  const input = { category: 'science', difficulty: 'medium', count: 1 } as const;
+  const input = { category: 'science', subcategory: 'science-chemistry', difficulty: 'medium', count: 1 } as const;
   const evidence = [{ id:'test', title:'Fixture evidence', url:'https://example.com/fact', facts:'통합 테스트 자료' }];
   function output(text = `생성 테스트 ${randomUUID()}`): BankResult {
     return { quiz:{questions:[{question:text,options:['A','B','C','D'],correctAnswerIndex:0,explanation:'통합 테스트 해설'}]},
       sources:[[{title:evidence[0].title,url:evidence[0].url}]], usage:{inputTokens:100,outputTokens:200,responseId:'resp_fixture'},
-      metadata:{provider:'openai',model:'gpt-6-astra',promptVersion:'bank.evidence.v1',verificationStatus:'unreviewed'} };
+      metadata:{provider:'openai',model:'gpt-6-astra',promptVersion:'bank.evidence.v2',verificationStatus:'unreviewed'} };
   }
   function options(generate = vi.fn().mockResolvedValue(output()), jobId = randomUUID()) {
     return { pool,jobId,input,evidence,model:'gpt-6-astra',monthlyMicros:100_000_000,generator:{generate} };
@@ -339,7 +345,15 @@ describe('operator AI generation ledger', () => {
     expect(question.status).toBe('draft'); expect(question.reviewed_at).toBeNull();
     expect(question.sources).toEqual([{title:evidence[0].title,url:evidence[0].url}]);
     expect(question.provenance.generationJobId).toBe(job.jobId);
+    expect(question.provenance.taxonomy).toEqual({ version:'v1', subcategoryId:'science-chemistry', major:'science', minor:'화학', tags:[] });
     await expect(generateBankDrafts({...job,input:{...input,count:2}})).rejects.toMatchObject({code:'JOB_INPUT_CHANGED'});
+    await expect(generateBankDrafts({...job,input:{...input,subcategory:'science-physics'}})).rejects.toMatchObject({code:'JOB_INPUT_CHANGED'});
+  });
+  it('rejects invalid taxonomy before reserving budget or calling AI', async () => {
+    const job = options();
+    await expect(generateBankDrafts({ ...job, input:{ ...input, subcategory:'history-korea' } })).rejects.toThrow();
+    expect(job.generator.generate).not.toHaveBeenCalled();
+    expect((await pool.query('SELECT id FROM quizquiz.generation_jobs WHERE id=$1',[job.jobId])).rowCount).toBe(0);
   });
   it('skips existing exact questions without extra calls or publishing', async () => {
     const result=output();
@@ -378,6 +392,11 @@ describe('operator AI generation ledger', () => {
     const env={...process.env,OPENAI_API_KEY:'',OPENAI_MODEL:'gpt-6-astra',AI_MONTHLY_BUDGET_USD:'0',DATABASE_URL:'postgresql://invalid:invalid@127.0.0.1:1/missing'};
     const {stdout}=await execute(process.execPath,args,{env,timeout:15000});
     expect(JSON.parse(stdout)).toMatchObject({mode:'dry-run',count:3,monthlyBudgetUsd:0,reservationUsd:0.5});
+    const list = await execute(process.execPath,[...args,'--list-subcategories'],{env,timeout:15000});
+    expect(list.stdout).toContain('lifestyle-cooking');
+    const selected = await execute(process.execPath,[...args,'--subcategory','science-space'],{env,timeout:15000});
+    expect(JSON.parse(selected.stdout).subcategory).toBe('science-space');
+    await expect(execute(process.execPath,[...args,'--category','history','--subcategory','science-space'],{env,timeout:15000})).rejects.toThrow();
     await expect(execute(process.execPath,[...args,'--execute'],{env,timeout:15000})).rejects.toThrow();
   });
 });

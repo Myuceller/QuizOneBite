@@ -1,7 +1,7 @@
 import 'server-only';
 import { randomUUID } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
-import type { QuizGenerationInput } from '../../features/quiz/domain/quiz.ts';
+import { BankGenerationInputSchema, generationTaxonomy, type BankGenerationInput } from '../../features/quiz/domain/taxonomy.ts';
 import { BANK_PROMPT_VERSION, PRICING_VERSION, RESERVATION_MICROS, BankGenerationError, bankRequestHash, usageCharge, type Evidence, type BankGenerator } from '../ai/bank-generation.ts';
 
 export type GenerationJob = {
@@ -20,10 +20,11 @@ export async function getGenerationJob(pool: Pool, id: string): Promise<Generati
   return row ? { id: row.id, status: row.status, questionIds: row.question_ids, chargedUsd: Number(row.charged_micros) / 1_000_000, skipped: row.skipped_count, errorCode: row.error_code } : null;
 }
 export async function generateBankDrafts(options: {
-  pool: Pool; jobId: string; input: QuizGenerationInput; evidence: Evidence; model: string;
+  pool: Pool; jobId: string; input: BankGenerationInput; evidence: Evidence; model: string;
   monthlyMicros: number; generator: BankGenerator;
 }): Promise<GenerationJob> {
   const { pool, jobId, input, evidence, model, monthlyMicros, generator } = options;
+  BankGenerationInputSchema.parse(input);
   const hash = bankRequestHash(input, evidence, model);
   const reserved = await transaction(pool, async client => {
     // All CLI processes sharing this DB reserve budget atomically, before any API call.
@@ -57,7 +58,7 @@ export async function generateBankDrafts(options: {
     for (const [index, question] of result.quiz.questions.entries()) {
       const inserted = await client.query(`INSERT INTO quizquiz.bank_questions(id,category,difficulty,question,options,correct_answer_index,explanation,sources,provenance)
         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT DO NOTHING RETURNING id`, [randomUUID(),input.category,input.difficulty,question.question,question.options,question.correctAnswerIndex,question.explanation,
-        JSON.stringify(result.sources[index]),JSON.stringify({ ...result.metadata, generationJobId: jobId })]);
+        JSON.stringify(result.sources[index]),JSON.stringify({ ...result.metadata, generationJobId: jobId, taxonomy: generationTaxonomy(input) })]);
       if (inserted.rowCount) ids.push(inserted.rows[0].id);
     }
     await client.query(`UPDATE quizquiz.generation_jobs SET status='completed',charged_micros=$2,input_tokens=$3,output_tokens=$4,response_id=$5,

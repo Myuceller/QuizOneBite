@@ -3,27 +3,31 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import pg from 'pg';
 import { z } from 'zod';
-import { QuizGenerationInputSchema } from '../src/features/quiz/domain/quiz.ts';
+import { BankGenerationInputSchema, QUIZ_SUBCATEGORIES } from '../src/features/quiz/domain/taxonomy.ts';
 import { EvidenceSchema, OpenAIBankGenerator, buildBankRequest, monthlyBudgetMicros, RESERVATION_MICROS, BankGenerationError } from '../src/server/ai/bank-generation.ts';
 import { generateBankDrafts, getGenerationJob } from '../src/server/db/generation-jobs.ts';
 
 let pool: pg.Pool | undefined;
 try {
   const { values } = parseArgs({ options: {
-    category: { type: 'string', default: 'science' }, difficulty: { type: 'string', default: 'medium' },
-    count: { type: 'string', default: '3' }, evidence: { type: 'string', default: 'docs/examples/science-evidence.json' },
+    category: { type: 'string', default: 'science' }, subcategory: { type: 'string' }, 'list-subcategories': { type: 'boolean' }, difficulty: { type: 'string', default: 'medium' },
+    count: { type: 'string', default: '3' }, evidence: { type: 'string', default: 'docs/examples/general-knowledge-earth.json' },
     job: { type: 'string' }, execute: { type: 'boolean', default: false }, status: { type: 'string' }, help: { type: 'boolean' },
   } });
   if (values.help) {
-    console.log('npm run bank:generate -- [--category science --difficulty medium --count 3 --evidence file.json] [--execute --job UUID] | --status UUID');
+    console.log('npm run bank:generate -- [--category science --subcategory science-earth --difficulty medium --count 3 --evidence file.json] [--execute --job UUID] | --status UUID');
+    console.log('Use --list-subcategories to see IDs. --subcategory is required with generation options or --execute.');
     console.log('Default: dry run, no AI call. Execution requires OPENAI_API_KEY, AI_MONTHLY_BUDGET_USD and DATABASE_URL.');
+  } else if (values['list-subcategories']) {
+    console.table(QUIZ_SUBCATEGORIES);
   } else if (values.status) {
     const id = z.uuid().parse(values.status);
     if (!process.env.DATABASE_URL) throw new BankGenerationError('DATABASE_URL_REQUIRED');
     pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 2, connectionTimeoutMillis: 5000, statement_timeout: 30000 });
     console.log(JSON.stringify(await getGenerationJob(pool, id), null, 2));
   } else {
-    const input = QuizGenerationInputSchema.parse({ category: values.category, difficulty: values.difficulty, count: Number(values.count) });
+    if (!values.subcategory && (values.execute || process.argv.length > 2)) throw new BankGenerationError('SUBCATEGORY_REQUIRED');
+    const input = BankGenerationInputSchema.parse({ category: values.category, subcategory: values.subcategory ?? 'science-earth', difficulty: values.difficulty, count: Number(values.count) });
     const file = await readFile(values.evidence);
     if (file.byteLength > 24_000) throw new BankGenerationError('INPUT_TOO_LARGE');
     const evidence = EvidenceSchema.parse(JSON.parse(file.toString('utf8')));

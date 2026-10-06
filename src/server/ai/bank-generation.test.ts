@@ -4,8 +4,9 @@ vi.mock('openai', () => ({ default: class {
   responses = { create };
   constructor(options: unknown) { clientOptions(options); }
 } }));
-import { OpenAIBankGenerator, buildBankRequest, monthlyBudgetMicros, usageCharge } from './bank-generation';
-const input = { category: 'science', difficulty: 'medium', count: 1 } as const;
+import { OpenAIBankGenerator, buildBankRequest, bankRequestHash, monthlyBudgetMicros, usageCharge } from './bank-generation';
+import { QUIZ_QUALITY_INSTRUCTIONS } from './quiz-quality';
+const input = { category: 'science', subcategory: 'science-chemistry', difficulty: 'medium', count: 1 } as const;
 const evidence = [{ id: 'water', title: '검증 자료', url: 'https://example.com/water', facts: '물의 화학식은 H₂O다.' }];
 const question = { question: '물의 화학식은?', options: ['H₂O','CO₂','O₂','NaCl'], correctAnswerIndex: 0, explanation: '물은 H₂O다.', evidenceIds: ['water'] };
 function response(questions = [question]) { return { id: 'resp_test', status: 'completed', service_tier: 'default', output: [], output_text: JSON.stringify({ questions }), usage: { input_tokens: 100, output_tokens: 200 } }; }
@@ -19,6 +20,19 @@ describe('operator bank generation', () => {
     expect(result.sources).toEqual([[{ title: evidence[0].title, url: evidence[0].url }]]);
     expect(result.metadata.verificationStatus).toBe('unreviewed');
     expect(result.usage).toEqual({ inputTokens: 100, outputTokens: 200, responseId: 'resp_test' });
+    expect(create.mock.calls[0][0].instructions).toContain(QUIZ_QUALITY_INSTRUCTIONS);
+    expect(JSON.parse(create.mock.calls[0][0].input).taxonomy).toMatchObject({ major: 'science', minor: '화학', subcategoryId: 'science-chemistry' });
+    expect(result.metadata.promptVersion).toBe('bank.evidence.v2');
+  });
+  it('does not retry or save questions when suitable evidence is insufficient', async () => {
+    create.mockResolvedValue(response([]));
+    await expect(new OpenAIBankGenerator('test-key', evidence).generate(input)).rejects.toMatchObject({ code: 'INSUFFICIENT_QUALITY_MATERIAL', usage: { inputTokens: 100, outputTokens: 200 } });
+    expect(create).toHaveBeenCalledOnce();
+  });
+  it('rejects mismatched subcategories before AI and changes identity when the subcategory changes', async () => {
+    await expect(new OpenAIBankGenerator('test-key', evidence).generate({ ...input, subcategory: 'culture-film' })).rejects.toThrow();
+    expect(create).not.toHaveBeenCalled();
+    expect(bankRequestHash(input, evidence, 'gpt-6-astra')).not.toBe(bankRequestHash({ ...input, subcategory: 'science-physics' }, evidence, 'gpt-6-astra'));
   });
   it.each(['incomplete','failed','cancelled'])('retains usage when %s output is rejected', async status => {
     create.mockResolvedValue({ ...response(), status });
