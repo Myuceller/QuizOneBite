@@ -18,9 +18,9 @@
 
 ## 현재 적용 범위
 
-이번에는 대표 문제를 소량 생성하고 `bank_questions.provenance.taxonomy`에 `{version, major, minor, tags}`로 편집 분류를 기록한다. 새 데이터의 major는 위 ID를 사용하고 minor는 표의 표시 이름을 사용한다. 기존 생성 이력은 그대로 보존한다.
+대표 문제 6개와 추가 문제 45개를 생성하고 `bank_questions.provenance.taxonomy`에 `{version, major, minor, tags}`로 편집 분류를 기록했다. 새 데이터의 major는 위 ID를 사용하고 minor는 표의 표시 이름을 사용한다. 기존 생성 이력은 그대로 보존한다.
 
-앱의 현재 카테고리 필터와 SQL 제약은 기존 5개(`general/science/history/geography/culture`)다. 9개 대분류·소분류를 선택하는 UI와 정식 분류 FK·검색 필터는 아직 구현하지 않았다. 이번 대표 문제는 기존 스키마에서도 제공할 수 있는 과학·역사·지리에 배치한다. 나머지 분야를 채우기 전에 API·DB 제약과 기존 문항 이관을 함께 적용해야 한다.
+앱의 현재 카테고리 필터와 SQL 제약은 기존 5개(`general/science/history/geography/culture`)다. 9개 대분류·소분류를 선택하는 UI와 정식 분류 FK·검색 필터는 아직 구현하지 않았다. 첫 대표 문제는 과학·역사·지리에, 추가 45개는 기존 5개 주제의 모든 난이도에 3개씩 배치했다. 예를 들어 일반 상식의 국제기구 문제는 편집 메타데이터에 사회·경제/국제기구로 기록하지만 현재 선택 필터는 일반 상식이다. 9개 대분류를 정식 필터로 제공하기 전에 API·DB 제약과 기존 문항 이관을 함께 적용해야 한다.
 
 ## 대표 문제 생성 자료
 
