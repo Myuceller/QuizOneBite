@@ -1,6 +1,6 @@
 # Render 배포 시작하기
 
-호스팅은 Render Web Service(Docker)와 Render Postgres로 결정했다. 이 문서는 배포 설정과 진행 순서이며 실제 Render 리소스 생성·원격 DB 연결은 아직 수행하지 않았다. 먼저 staging만 만들고, 운영은 별도 Blueprint로 생성한다.
+호스팅은 Render Web Service(Docker)와 Render Postgres로 결정했다. staging 앱·DB가 생성되어 배포되었다. 테스트 주소는 <https://quizonebite-staging.onrender.com>이다. 운영은 아직 생성하지 않았으며 별도 Blueprint를 사용한다.
 
 ## 환경 구성
 
@@ -64,7 +64,7 @@ Render는 로컬 `compose.yaml`을 실행하지 않는다. 앱은 Dockerfile의 
 - 가입 → 환영 화면 → 샘플 문제 생성 → 내 문제 모음 → 로그아웃 → 재로그인.
 - 재배포 후에도 계정과 저장된 문제가 유지되는지 확인.
 
-staging도 외부에서 접속할 수 있는 HTTPS 웹사이트다. 현재는 샘플 문제 미리보기와 계정 기능을 제공하고 정답 제출·채점은 아직 없다. 유료 Astra 호출도 공개 배포에서 차단된 상태다.
+staging도 외부에서 접속할 수 있는 HTTPS 웹사이트다. 계정 기능과 문제 은행 기반 풀이·채점·평가를 제공한다. 유료 Astra 호출도 공개 배포에서 차단된 상태다.
 
 ## 4. CI와 운영 배포
 
