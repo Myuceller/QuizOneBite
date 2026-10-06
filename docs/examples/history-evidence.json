@@ -1,0 +1,14 @@
+[
+  {
+    "id": "loc-gutenberg",
+    "title": "미국 의회도서관 · The Gutenberg Bible",
+    "url": "https://www.loc.gov/exhibits/bibles/the-gutenberg-bible.html",
+    "facts": "구텐베르크 성서는 서유럽에서 금속 활자로 인쇄한 최초의 대형 서적으로 평가된다. 인쇄는 독일 마인츠에서 1455년 말경 완료된 것으로 추정된다. 구텐베르크는 규격이 일정하고 서로 바꾸어 사용할 수 있는 금속 활자의 제작과 인쇄 공정 발전에 기여했다. 성서 본문은 라틴어 불가타 번역본이다. 세계 최초의 금속 활자 인쇄물이라는 뜻은 아니다."
+  },
+  {
+    "id": "nara-declaration",
+    "title": "미국 국립문서기록관리청 · 독립선언문 원문",
+    "url": "https://www.archives.gov/founding-docs/declaration-transcript",
+    "facts": "미국 독립선언문은 1776년 7월 4일 대륙회의에서 채택되었다. 선언문은 양도할 수 없는 권리의 예로 생명, 자유, 행복 추구를 든다. 정부의 정당한 권력은 피치자의 동의에서 나온다는 원칙도 담고 있다."
+  }
+]
