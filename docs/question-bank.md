@@ -52,6 +52,7 @@
 ```sh
 npm run bank -- import /private/path/questions.json
 npm run bank -- queue
+npm run bank -- show <문제UUID>
 npm run bank -- publish <문제UUID> <검수자> "정답과 해설을 출처에서 확인함"
 npm run bank -- pause <문제UUID> <검수자> "오류 재검토"
 npm run bank -- retire <문제UUID> <검수자> "수정 버전으로 교체"
@@ -77,7 +78,7 @@ JSON 형식(배열, 최대 1,000문제):
 ]
 ```
 
-`id`를 생략하면 새 UUID가 발급된다. 출처는 HTTPS만 허용하며, 출처 링크가 있다는 사실만으로 정확성이 보장되지는 않는다. 게시 명령은 운영자의 실제 내용 검토를 전제로 한다. 자동 Batch 제출·비용 집계·생성 한도는 아직 연결하지 않았으며, 현재 유료 AI 경로의 운영 차단을 유지한다.
+`id`를 생략하면 새 UUID가 발급된다. 출처는 HTTPS만 허용하며, 출처 링크가 있다는 사실만으로 정확성이 보장되지는 않는다. 게시 명령은 운영자의 실제 내용 검토를 전제로 한다. 운영자용 `npm run bank:generate`는 참고 자료로부터 소량의 초안을 직접 저장하고, DB 기반 월 예산 예약·사용량 기록을 적용한다. [설정과 실행 순서](ai-generation.md)를 참고한다. 공개 웹의 유료 생성은 계속 차단하며 자동 Batch 제출은 아직 없다.
 
 ## 검증
 

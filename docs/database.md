@@ -77,6 +77,8 @@ erDiagram
 
 기존 초안과 플레이 기록은 분리한다. 정책과 운영 명령은 [문제 은행 문서](question-bank.md)를 참고한다.
 
+`0006_generation_jobs.sql`은 운영자 AI 생성의 작업 ID, 월 예산 예약·토큰 사용량, 출처 자료와 생성 문항 ID를 기록하는 `generation_jobs`를 추가한다. 사용자 플레이와 별도이며 API 키는 저장하지 않는다.
+
 ## 저장 규칙
 
 - `PostgresQuizRepository.save`는 퀴즈와 모든 문제를 같은 연결의 트랜잭션으로 저장한다. 중간에 실패하면 전체를 롤백한다. [pg 트랜잭션](https://node-postgres.com/features/transactions)

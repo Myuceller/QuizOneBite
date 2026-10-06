@@ -6,6 +6,7 @@ Next.js App Router, React, TypeScript 기반 상식 퀴즈 웹앱이다. DB는 P
 
 - [프로젝트 구조](docs/architecture.md)
 - [문제 은행·출제·평가](docs/question-bank.md)
+- [운영자 AI 생성·예산](docs/ai-generation.md)
 - [AI 연결 규칙](docs/ai.md)
 - [PostgreSQL 실행과 마이그레이션](docs/database.md)
 - [인증과 세션](docs/auth.md)
