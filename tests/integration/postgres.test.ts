@@ -13,6 +13,8 @@ import { PostgresPlayRepository, consumePlayQuota } from '@/server/db/play-repos
 import { generateBankDrafts } from '@/server/db/generation-jobs';
 import { BankGenerationError, type BankResult } from '@/server/ai/bank-generation';
 
+import { PostgresSubmissionRepository } from '@/server/db/submission-repository';
+
 const execute = promisify(execFile);
 const testDatabase = `quizquiz_test_${randomUUID().replaceAll("-", "")}`;
 let admin: Client;
@@ -137,7 +139,7 @@ describe("PostgreSQL persistence", () => {
     await command("seed");
     await command("seed");
     const migrations = await pool.query("SELECT count(*)::int AS count FROM quizquiz.schema_migrations");
-    expect(migrations.rows[0].count).toBe(6);
+    expect(migrations.rows[0].count).toBe(7);
     const sample = await repository.findById("98c2d9a0-6990-4d57-8c81-b31704315a48");
     expect(sample?.questions).toHaveLength(3);
     expect(sample?.metadata.verificationStatus).toBe("unreviewed");
@@ -398,5 +400,50 @@ describe('operator AI generation ledger', () => {
     expect(JSON.parse(selected.stdout).subcategory).toBe('science-space');
     await expect(execute(process.execPath,[...args,'--category','history','--subcategory','science-space'],{env,timeout:15000})).rejects.toThrow();
     await expect(execute(process.execPath,[...args,'--execute'],{env,timeout:15000})).rejects.toThrow();
+  });
+});
+
+
+describe('community submission review', () => {
+  async function user() {
+    const id=randomUUID();
+    await pool.query('INSERT INTO public.auth_user(id,name,email,"emailVerified","createdAt","updatedAt") VALUES($1,$2,$3,false,now(),now())',[id,'제출 테스트',`${id}@example.test`]);
+    return id;
+  }
+  const input = () => ({requestId:randomUUID(),subcategory:'science-earth',difficulty:'easy' as const,question:`차가운 컵의 물방울 원리는 무엇인가요? ${randomUUID()}`,options:['응결','증발','승화','융해'],correctAnswerIndex:0,explanation:'공기 속 수증기가 차가운 컵에서 액체로 변하기 때문입니다.',sourceTitle:'검증용 출처',sourceUrl:'https://example.com/science'});
+  it('stores pending drafts privately, replays requests and rejects changed replays',async()=>{
+    const repo=new PostgresSubmissionRepository(pool);const owner=await user();const value=input();
+    const before=(await pool.query('SELECT count(*)::int n FROM quizquiz.bank_questions')).rows[0].n;
+    const [one,two]=await Promise.all([repo.submit(owner,value),repo.submit(owner,value)]);
+    expect(one.id).toBe(two.id);expect(one.status).toBe('pending');expect(one).not.toHaveProperty('correctAnswerIndex');
+    expect(await repo.history(await user())).toEqual([]);expect(await repo.history(owner)).toHaveLength(1);
+    await expect(repo.submit(owner,{...value,question:'변경된 문제의 내용입니다.'})).rejects.toMatchObject({code:'REQUEST_CONFLICT'});
+    expect((await pool.query('SELECT count(*)::int n FROM quizquiz.bank_questions')).rows[0].n).toBe(before);
+  });
+  it('runs the operator CLI on Node without publishing a rejected question',async()=>{
+    const repo=new PostgresSubmissionRepository(pool);const owner=await user();const saved=await repo.submit(owner,input());
+    await execute(process.execPath,['--conditions=react-server','scripts/review-submissions.ts','reject',saved.id,'cli tester','출처 보완 필요'],{env:{...process.env,DATABASE_URL:testUrl},timeout:15000});
+    expect((await repo.history(owner))[0].status).toBe('rejected');
+  });
+  it('enforces the five-per-24-hour limit under concurrent requests',async()=>{
+    const repo=new PostgresSubmissionRepository(pool);const owner=await user();
+    const results=await Promise.allSettled(Array.from({length:7},()=>repo.submit(owner,input())));
+    expect(results.filter(r=>r.status==='fulfilled')).toHaveLength(5);
+    expect(results.filter(r=>r.status==='rejected').every(r=>r.status==='rejected'&&r.reason.code==='DAILY_LIMIT')).toBe(true);
+  });
+  it('publishes only after operator approval and retains classification',async()=>{
+    const repo=new PostgresSubmissionRepository(pool);const value=input();const saved=await repo.submit(await user(),value);
+    const result=await repo.review(saved.id,'approve','test reviewer','출처 및 정답 검증 완료');
+    const bank=(await pool.query('SELECT status,provenance,correct_answer_index FROM quizquiz.bank_questions WHERE id=$1',[result.bankId])).rows[0];
+    expect(bank.status).toBe('published');expect(bank.provenance.taxonomy.subcategoryId).toBe('science-earth');expect(bank.correct_answer_index).toBe(0);
+    await expect(repo.review(saved.id,'approve','test','중복 승인')).rejects.toMatchObject({code:'NOT_PENDING'});
+  });
+  it('rejects without publishing and rolls back duplicate approval',async()=>{
+    const repo=new PostgresSubmissionRepository(pool);const value=input();const owner=await user();const first=await repo.submit(owner,value);
+    const rejection=await repo.review(first.id,'reject','test','출처 보완 필요');expect(rejection.bankId).toBeNull();expect((await repo.history(owner))[0].reviewNote).toBe('출처 보완 필요');
+    expect((await repo.submit(owner,{...value,requestId:randomUUID(),sourceUrl:'https://example.com/updated-source'})).status).toBe('pending');
+    const duplicate=input();const a=await repo.submit(await user(),duplicate);const b=await repo.submit(await user(),{...duplicate,requestId:randomUUID()});
+    await repo.review(a.id,'approve','test','검수 완료');await expect(repo.review(b.id,'approve','test','검수 완료')).rejects.toMatchObject({code:'23505'});
+    expect((await pool.query('SELECT status FROM quizquiz.question_submissions WHERE id=$1',[b.id])).rows[0].status).toBe('pending');
   });
 });

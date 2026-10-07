@@ -28,7 +28,8 @@
     "test:db": "node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run --config vitest.integration.config.ts",
     "docker:up": "docker compose --env-file .env.local --profile app up --build -d --wait",
     "docker:down": "docker compose --env-file .env.local --profile app down",
-    "docker:logs": "docker compose --env-file .env.local logs -f app"
+    "docker:logs": "docker compose --env-file .env.local logs -f app",
+    "submissions": "node --conditions=react-server --env-file-if-exists=.env.local scripts/review-submissions.ts"
   },
   "dependencies": {
     "better-auth": "1.7.6",

@@ -57,6 +57,10 @@ flowchart LR
 
 배포 이미지는 Next.js standalone 출력이다. 로컬은 `db → migrate → app`, 무료 Render staging은 컨테이너 시작 스크립트에서 마이그레이션 후 앱을 실행한다. 자세한 설정은 [deployment.md](deployment.md)와 [render.md](render.md)에 있다.
 
+## 사용자 문제 제출
+
+`/submit`에서 로그인한 사용자가 기존 9개 대분류·49개 소분류로 문제를 제안한다. `src/features/submissions`가 입력 계약·화면·저장 포트를, `src/server/db/submission-repository.ts`가 대기 저장·소유권·제출 한도·운영자 승인 트랜잭션을 담당한다. 공개 API는 `/api/submissions`, 검수는 운영자 CLI만 제공한다. [흐름과 검수 방법](community-submissions.md)을 참고한다. AI 호출은 없다.
+
 ## 후속 작업
 
 - 소량 생성의 실제 품질·사용량을 검증한 뒤 Batch API 등 대량 처리 검토. 현재 운영자 전용 생성·월 예산 예약·초안 저장은 [구현됨](ai-generation.md).
