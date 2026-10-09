@@ -20,18 +20,18 @@
 
 `src/features/quiz/domain/taxonomy.ts`가 위 9개 대분류·49개 소분류의 실행 가능한 목록이다. `npm run bank:generate -- --list-subcategories`로 ID를 확인한다. 예: `science-earth`(과학·자연 / 지구·기후), `lifestyle-cooking`(생활·음식 / 요리·조리 원리), `geography-countries`(지리·세계 / 국가·수도).
 
-운영자 생성에는 `subcategory`가 필수이고 `category`와의 매핑을 검증한다. 기술·사회·인문·생활·스포츠는 현재 `general` 필터로 출제한다. 새 초안에는 `{version, subcategoryId, major, minor, tags}`를 서버에서 자동 기록한다. 기존 문항의 이전 편집 분류는 보존한다. 소분류는 전문가 시험 범위를 뜻하지 않으며 모든 분야에 [상식 품질 기준](question-quality.md)을 동일하게 적용한다.
+운영자 생성에는 `subcategory`가 필수이고 `category`와의 매핑을 검증한다. 기술·사회·인문·생활·스포츠는 현재 `general` 필터로 출제한다. 새 초안에는 `{version, subcategoryId, major, minor, tags}`를 서버에서 자동 기록한다. 기존 문항의 이전 편집 분류는 보존한다. 소분류는 전문가 시험 범위를 뜻하지 않으며 모든 분야에 [상식 품질 기준](quality.md)을 동일하게 적용한다.
 
 ## 현재 적용 범위
 
 대표 문제 6개와 추가 문제 45개를 생성하고 `bank_questions.provenance.taxonomy`에 `{version, major, minor, tags}`로 편집 분류를 기록했다. 새 데이터의 major는 위 ID를 사용하고 minor는 표의 표시 이름을 사용한다. 기존 생성 이력은 그대로 보존한다.
 
-앱의 현재 카테고리 필터와 SQL 제약은 기존 5개(`general/science/history/geography/culture`)다. 9개 대분류·소분류를 선택하는 UI와 정식 분류 FK·검색 필터는 아직 구현하지 않았다. 첫 대표 문제는 과학·역사·지리에, 추가 45개는 기존 5개 주제의 모든 난이도에 3개씩 배치했다. 예를 들어 일반 상식의 국제기구 문제는 편집 메타데이터에 사회·경제/국제기구로 기록하지만 현재 선택 필터는 일반 상식이다. 9개 대분류를 정식 필터로 제공하기 전에 API·DB 제약과 기존 문항 이관을 함께 적용해야 한다.
+앱의 현재 카테고리 필터와 SQL 제약은 기존 5개(`general/science/history/geography/culture`)다. 사용자 문제 제출(`/submit`)에서는 9개 대분류·49개 소분류를 선택할 수 있다. 메인 풀이 화면의 9개 대분류 전환과 정식 분류 FK·검색 필터는 아직 구현하지 않았다. 첫 대표 문제는 과학·역사·지리에, 추가 45개는 기존 5개 주제의 모든 난이도에 3개씩 배치했다. 예를 들어 일반 상식의 국제기구 문제는 편집 메타데이터에 사회·경제/국제기구로 기록하지만 현재 선택 필터는 일반 상식이다. 9개 대분류를 정식 필터로 제공하기 전에 API·DB 제약과 기존 문항 이관을 함께 적용해야 한다.
 
 ## 대표 문제 생성 자료
 
-- [과학](examples/science-evidence.json): NASA 행성 자료.
-- [역사](examples/history-evidence.json): 미국 의회도서관·국립문서기록관리청 자료.
-- [지리](examples/geography-evidence.json): NOAA 해양 자료.
+- [과학](../examples/science-evidence.json): NASA 행성 자료.
+- [역사](../examples/history-evidence.json): 미국 의회도서관·국립문서기록관리청 자료.
+- [지리](../examples/geography-evidence.json): NOAA 해양 자료.
 
 자료는 2026-10-06 원문을 대조해 요약했다. URL이 붙어 있어도 생성 결과의 정답·오답·해설은 게시 전에 별도로 검토한다. 정답이 포함된 생성 결과는 DB에서 관리하며 이 문서나 Git에 복사하지 않는다. 로컬 DB 데이터는 Render DB로 자동 동기화되지 않는다.

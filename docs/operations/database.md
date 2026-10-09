@@ -1,5 +1,7 @@
 # PostgreSQL
 
+문제 목록·정답·소분류별 수량을 직접 보려면 [로컬 DB 조회 안내](inspect-db.md)를 따른다.
+
 DB 엔진은 PostgreSQL로 확정했다. 현재 `pg` 드라이버와 SQL 마이그레이션, Better Auth를 사용한다. 원격 DB는 Render Postgres를 선택했으며 테스트·운영 DB를 따로 생성할 설정을 준비했다. 실제 원격 DB는 아직 생성하지 않았다. 로컬 Compose는 PostgreSQL 18을 실행한다. 연결 순서는 [Render 시작 가이드](render.md)에 있다.
 
 ## 로컬 준비
@@ -75,7 +77,7 @@ erDiagram
 - `question_ratings`, `question_reports`: 계정·문제당 평가 1개와 오류 신고 1개.
 - `play_limits`: 여러 인스턴스가 공유하는 출제·답안·평가 요청 제한.
 
-기존 초안과 플레이 기록은 분리한다. 정책과 운영 명령은 [문제 은행 문서](question-bank.md)를 참고한다.
+기존 초안과 플레이 기록은 분리한다. 정책과 운영 명령은 [문제 은행 문서](../quiz/bank.md)를 참고한다.
 
 `0006_generation_jobs.sql`은 운영자 AI 생성의 작업 ID, 월 예산 예약·토큰 사용량, 출처 자료와 생성 문항 ID를 기록하는 `generation_jobs`를 추가한다. 사용자 플레이와 별도이며 API 키는 저장하지 않는다.
 
@@ -107,3 +109,7 @@ erDiagram
 - `quizquiz.preview_limits`: 계정당 분당 미리보기 요청 수. 여러 서버의 동시 요청에도 10회 상한을 원자적으로 확인한다.
 
 인증 SQL은 설치된 Better Auth 스키마에서 생성하고 public 스키마를 명시했다. 이미 적용한 파일을 변경하지 않는다. 인증 라이브러리 업그레이드 시 필요한 스키마 차이를 새 마이그레이션으로 추가한다.
+
+## 직접 운영하는 PostgreSQL 방향 (2026-10-07)
+
+사용자 결정에 따라 Supabase로 이전하지 않고 PostgreSQL을 직접 관리하는 방향으로 정했다. 현재 로컬은 Docker PostgreSQL이며, 배포된 앱은 아직 기존 Render PostgreSQL을 사용한다. 직접 운영할 호스트·영구 디스크·외부 연결 제한·백업과 복구·업데이트 정책은 다음 DB 이전 작업에서 확정한다. 무료 앱 컨테이너의 임시 파일시스템에 DB를 함께 올리지는 않는다. 이번 문제 제출 기능 작업은 원격 DB 호스팅을 바꾸지 않는다.

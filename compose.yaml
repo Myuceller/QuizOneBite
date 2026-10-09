@@ -1,6 +1,24 @@
 name: quizquiz
 
 services:
+  adminer:
+    profiles: [tools]
+    image: adminer:6.1.1-standalone
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(file_get_contents('http://127.0.0.1:8080/') === false ? 1 : 0);"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+
   migrate:
     profiles: [app]
     build:
@@ -39,6 +57,7 @@ services:
 
   db:
     image: postgres:18-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: quizquiz
       POSTGRES_DB: quizquiz

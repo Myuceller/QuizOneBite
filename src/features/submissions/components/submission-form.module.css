@@ -1,0 +1,27 @@
+.layout { display: grid; gap: 36px; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-bottom-width: 4px; border-radius: 20px; padding: 28px; }
+.fields { display: grid; gap: 18px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.heading { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.heading h2 { font-size: 19px; margin: 0; }
+.heading > span { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: #edf3ff; color: var(--accent); font-weight: 800; font-size: 13px; flex-shrink: 0; }
+.row { display: grid; grid-template-columns: 1fr 1fr 110px; gap: 14px; }
+.hint { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.8; }
+.fields textarea { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 10px; font: inherit; color: var(--text); background: white; resize: vertical; }
+.fields textarea:focus-visible { outline: 3px solid #7595ed; outline-offset: 2px; }
+.options { padding: 0; border: 0; min-width: 0; display: grid; gap: 10px; }
+.options legend { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+.option { display: flex; gap: 10px; align-items: center; }
+.option > input { width: 100%; min-width: 0; padding: 13px; border: 1px solid var(--border); border-radius: 10px; font: inherit; }
+.answer { display: flex; align-items: center; gap: 7px; min-width: 48px; cursor: pointer; font-weight: 700; }
+.answer input { accent-color: #219653; width: 18px; height: 18px; }
+.answer:has(input:checked) { color: #167c43; }
+.option:has(input:checked) > input { border-color: #219653; background: #f0fbf3; }
+.success { color: #167c43; font-weight: 600; line-height: 1.7; margin-bottom: 0; }
+.history ul { list-style: none; padding: 0; display: grid; gap: 12px; }
+.history li { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 20px; overflow-wrap: anywhere; }
+.history h3 { font-size: 16px; line-height: 1.6; margin: 12px 0 0; }
+.history li p { font-size: 13px; color: var(--muted); }
+.meta { display: flex; gap: 12px; flex-wrap: wrap; color: var(--muted); font-size: 12px; }
+.meta span:first-child { color: var(--accent); font-weight: 700; }
+.empty { padding: 28px 0; color: var(--muted); font-size: 14px; }
+@media(max-width: 600px) { .panel { padding: 20px 16px; } .row { grid-template-columns: 1fr; } .heading h2 { font-size: 17px; } }

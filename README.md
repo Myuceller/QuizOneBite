@@ -18,7 +18,7 @@ npm run dev
 
 ## AI 문제 은행 채우기
 
-`npm run bank:generate`는 API를 호출하지 않고 생성 계획을 출력합니다. 운영자가 키와 월 예산을 설정하고 실행 옵션을 주면 Astra가 1~5개 초안을 만들며, 출처 검토 후 기존 게시 명령으로 공개합니다. [키 설정·비용 제한·실행 가이드](docs/ai-generation.md)를 참고하세요. 플레이에는 키가 필요하지 않습니다.
+`npm run bank:generate`는 API를 호출하지 않고 생성 계획을 출력합니다. 운영자가 키와 월 예산을 설정하고 실행 옵션을 주면 Astra가 1~5개 초안을 만들며, 출처 검토 후 기존 게시 명령으로 공개합니다. [키 설정·비용 제한·실행 가이드](docs/ai/generation.md)를 참고하세요. 플레이에는 키가 필요하지 않습니다.
 
 ## Astra 개발 미리보기 연결
 
@@ -55,10 +55,10 @@ src/
 db/migrations/                 SQL 마이그레이션
 scripts/                       DB 설정·마이그레이션·시드 명령
 .agents/skills/                 프로젝트 전용 개발 스킬
-docs/                          구조와 AI 설계 결정
+docs/                          주제별 가이드·연도별 작업 기록
 ```
 
-`문제 초안 → 출처 검토·게시 → PostgreSQL 문제 은행 → 출제·서버 채점 → 사용자 평가` 순서로 운영합니다. 풀 때는 AI를 호출하지 않습니다. 초기 검토 샘플 10개를 제공하며 출제 정책과 운영 명령은 [문제 은행 문서](docs/question-bank.md)를 참고하세요. 기존 개발용 생성 미리보기는 `/preview`에 유지합니다. `QuizGenerator`와 `QuizRepository`를 통해 AI와 DB 구현을 도메인에서 분리합니다. 서버의 `DATABASE_URL`로 접속하며 원격 호스팅은 Render Web Service(Docker) + Render Postgres를 사용하기로 했습니다. [Render 테스트 서버](https://quizonebite-staging.onrender.com)에 배포했습니다.
+`문제 초안 → 출처 검토·게시 → PostgreSQL 문제 은행 → 출제·서버 채점 → 사용자 평가` 순서로 운영합니다. 풀 때는 AI를 호출하지 않습니다. 초기 검토 샘플 10개를 제공하며 출제 정책과 운영 명령은 [문제 은행 문서](docs/quiz/bank.md)를 참고하세요. 기존 개발용 생성 미리보기는 `/preview`에 유지합니다. `QuizGenerator`와 `QuizRepository`를 통해 AI와 DB 구현을 도메인에서 분리합니다. 서버의 `DATABASE_URL`로 접속하며 원격 호스팅은 Render Web Service(Docker) + Render Postgres를 사용하기로 했습니다. [Render 테스트 서버](https://quizonebite-staging.onrender.com)에 배포했습니다.
 
 - `GET /api/health`: 앱 상태 확인.
 - `GET /api/health/ready`: DB·필수 스키마 연결 확인.
@@ -69,6 +69,10 @@ docs/                          구조와 AI 설계 결정
 - `POST /api/questions/[id]/rating`, `/report`: 답 제출 후 평가·오류 신고.
 - `/play/[id]`, `/play/history`: 문제 풀이와 최근 30회 기록·이어 풀기.
 - `/preview`, `/history`, `/history/[id]`: 기존 생성 미리보기와 초안 기록.
+
+## 문서
+
+[문서 목록과 작성 기준](docs/README.md)에서 설계·퀴즈·AI·운영 가이드를 찾을 수 있습니다. 생성·검수·배포 결과는 [날짜별 작업 기록](docs/records/README.md)에 모읍니다.
 
 ## 개발 스킬
 
@@ -148,9 +152,9 @@ npm run test:db
 
 `check`는 DB 없이 Lint, 타입 검사, 단위 테스트, 프로덕션 빌드를 실행합니다. `test:db`는 실행 중인 로컬 PostgreSQL에서 별도의 임시 DB로 저장·조회·트랜잭션 롤백, 인증·로그아웃·접근 권한·동시 요청 제한을 검증합니다.
 
-DB 확인은 `npm run db:status`, 중지는 `npm run db:down`입니다. 중지해도 데이터 볼륨은 유지됩니다. 상세한 명령과 테이블 구조는 [DB 문서](docs/database.md)를 참고하세요.
+DB 확인은 `npm run db:status`, 중지는 `npm run db:down`입니다. 중지해도 데이터 볼륨은 유지됩니다. 상세한 명령과 테이블 구조는 [DB 문서](docs/operations/database.md)를 참고하세요.
 
-다음 단계와 DB 경계는 [구조 문서](docs/architecture.md), 출력 계약과 모델 설정은 [AI 문서](docs/ai.md)에 정리했습니다.
+다음 단계와 DB 경계는 [구조 문서](docs/architecture/overview.md), 출력 계약과 모델 설정은 [AI 문서](docs/ai/integration.md)에 정리했습니다.
 
 ## 앱까지 Docker로 실행
 
@@ -163,10 +167,14 @@ npm run docker:up
 
 `db`가 준비되면 `migrate` 컨테이너가 새 SQL을 적용하고, 성공한 뒤에만 `app`이 시작합니다. `npm run docker:logs`로 앱 로그를, `npm run docker:down`으로 앱과 DB 중지를 수행합니다. 데이터 볼륨은 보존합니다. 일반 `npm run db:down`도 같은 Compose 프로젝트이므로 Docker 앱 실행 중에는 사용하지 마세요.
 
-인증 상세는 [auth.md](docs/auth.md), 이미지 구성과 공개 출시 계획은 [deployment.md](docs/deployment.md)를 참고하세요.
+인증 상세는 [auth.md](docs/architecture/auth.md), 이미지 구성과 공개 출시 계획은 [Docker 배포 문서](docs/operations/docker.md)를 참고하세요.
+
+## DB 관리 화면
+
+Docker Desktop의 `quizquiz` 컨테이너 그룹을 시작한 뒤 [DB 관리 화면](http://127.0.0.1:8080/?pgsql=db&username=quizquiz&db=quizquiz&ns=quizquiz&select=bank_questions)에 접속합니다. Adminer에서 문제·보기·정답·해설을 표로 조회할 수 있습니다. 최초 설치 또는 컨테이너 삭제 후에는 `npm run db:gui`로 생성합니다. `npm run docker:up`에도 포함되어 있습니다. 비밀번호와 로그인 방법은 [DB 조회 안내](docs/operations/inspect-db.md)를 참고하세요.
 
 ## Render 배포
 
 [render.yaml](render.yaml)은 `develop`의 무료 테스트 앱·DB, [render.production.yaml](render.production.yaml)은 `main`의 유료 운영 앱·DB를 별도로 정의합니다. 테스트 Blueprint가 배포되어 있으며 운영 Blueprint는 아직 생성하지 않았습니다. 무료 DB는 생성 후 30일에 만료되며 무료 웹 서버에는 유휴 시 중지 제한이 있습니다. 테스트 주소는 <https://quizonebite-staging.onrender.com>입니다.
 
-Docker 이미지 빌드 후 DB 마이그레이션을 실행하고 준비 상태를 확인합니다. 무료 테스트 앱은 컨테이너 시작 시, 유료 운영 앱은 pre-deploy 단계에서 마이그레이션합니다. 인증 비밀값은 Render가 생성하고 DB 주소는 환경별로 연결합니다. 테스트 앱은 CI 이후 자동 배포, 운영 앱은 수동 배포로 설정했습니다. Blueprint Auto Sync는 별도로 꺼두고 인프라 변경을 검토 후 반영합니다. 가입·GitHub 연결·최초 배포 순서는 [Render 시작 가이드](docs/render.md)에 있습니다.
+Docker 이미지 빌드 후 DB 마이그레이션을 실행하고 준비 상태를 확인합니다. 무료 테스트 앱은 컨테이너 시작 시, 유료 운영 앱은 pre-deploy 단계에서 마이그레이션합니다. 인증 비밀값은 Render가 생성하고 DB 주소는 환경별로 연결합니다. 테스트 앱은 CI 이후 자동 배포, 운영 앱은 수동 배포로 설정했습니다. Blueprint Auto Sync는 별도로 꺼두고 인프라 변경을 검토 후 반영합니다. 가입·GitHub 연결·최초 배포 순서는 [Render 시작 가이드](docs/operations/render.md)에 있습니다.

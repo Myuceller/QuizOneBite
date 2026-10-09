@@ -22,7 +22,7 @@ describe('operator bank generation', () => {
     expect(result.usage).toEqual({ inputTokens: 100, outputTokens: 200, responseId: 'resp_test' });
     expect(create.mock.calls[0][0].instructions).toContain(QUIZ_QUALITY_INSTRUCTIONS);
     expect(JSON.parse(create.mock.calls[0][0].input).taxonomy).toMatchObject({ major: 'science', minor: '화학', subcategoryId: 'science-chemistry' });
-    expect(result.metadata.promptVersion).toBe('bank.evidence.v2');
+    expect(result.metadata.promptVersion).toBe('bank.evidence.v3');
   });
   it('does not retry or save questions when suitable evidence is insufficient', async () => {
     create.mockResolvedValue(response([]));

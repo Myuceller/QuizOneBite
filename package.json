@@ -18,6 +18,8 @@
     "check": "npm run lint && npm run typecheck && npm test && npm run build",
     "db:env": "node scripts/db-env.mjs",
     "db:up": "docker compose --env-file .env.local up -d --wait db",
+    "db:gui": "docker compose --env-file .env.local --profile tools up -d --wait adminer",
+    "db:gui:stop": "docker compose --env-file .env.local --profile tools stop adminer",
     "db:down": "docker compose --env-file .env.local down",
     "db:migrate": "node --env-file-if-exists=.env.local scripts/db.mjs migrate",
     "db:seed": "node --env-file-if-exists=.env.local scripts/db.mjs seed",
@@ -26,9 +28,10 @@
     "bank:generate": "node --conditions=react-server --env-file-if-exists=.env.local scripts/generate-bank.ts",
     "db:setup": "npm run db:env && npm run db:up && npm run db:migrate && npm run db:seed",
     "test:db": "node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run --config vitest.integration.config.ts",
-    "docker:up": "docker compose --env-file .env.local --profile app up --build -d --wait",
-    "docker:down": "docker compose --env-file .env.local --profile app down",
-    "docker:logs": "docker compose --env-file .env.local logs -f app"
+    "docker:up": "docker compose --env-file .env.local --profile app --profile tools up --build -d --wait",
+    "docker:down": "docker compose --env-file .env.local --profile app --profile tools down",
+    "docker:logs": "docker compose --env-file .env.local logs -f app",
+    "submissions": "node --conditions=react-server --env-file-if-exists=.env.local scripts/review-submissions.ts"
   },
   "dependencies": {
     "better-auth": "1.7.6",

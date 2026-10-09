@@ -24,7 +24,7 @@ OpenAI 어댑터는 Responses API와 Zod 기반 Structured Outputs를 사용하�
 
 스키마 검증은 필수 필드, 타입, 값의 범위를 확인한다. 정답의 사실성, 문제의 모호함, 출처의 신뢰성까지 보장하지 않는다. AI가 출력한 정답을 그대로 운영용 정답으로 확정하지 않는다.
 
-운영자 문제 은행 생성은 위 공통 입력에 소분류 ID를 필수로 추가한 `BankGenerationInput` / `BankGenerator` 계약을 사용한다. 분류 검증과 저장 규칙은 [운영자 생성 가이드](ai-generation.md)를 따른다.
+운영자 문제 은행 생성은 위 공통 입력에 소분류 ID를 필수로 추가한 `BankGenerationInput` / `BankGenerator` 계약을 사용한다. 분류 검증과 저장 규칙은 [운영자 생성 가이드](generation.md)를 따른다.
 
 ## 프롬프트 변경
 
@@ -46,4 +46,4 @@ OpenAI 어댑터는 Responses API와 Zod 기반 Structured Outputs를 사용하�
 
 ## 비용을 쓰지 않는 플레이 경로
 
-`/api/play`와 평가·신고 API는 PostgreSQL만 사용하며 AI 어댑터를 호출하지 않는다. 초기 문제 10개와 운영 CLI는 [문제 은행 문서](question-bank.md)에 정리했다. 운영자 전용 소량 생성과 DB 월 예산 예약·사용량 기록을 구현했다. 기본 예산 0으로 잠겨 있으며 실제 호출은 키·예산·실행 옵션을 설정해야 한다. 설정과 검수 흐름은 [AI 생성 가이드](ai-generation.md)를 참고한다. Batch API와 자동 스케줄은 아직 없다.
+`/api/play`와 평가·신고 API는 PostgreSQL만 사용하며 AI 어댑터를 호출하지 않는다. 초기 문제 10개와 운영 CLI는 [문제 은행 문서](../quiz/bank.md)에 정리했다. 운영자 전용 소량 생성과 DB 월 예산 예약·사용량 기록을 구현했다. 기본 예산 0으로 잠겨 있으며 실제 호출은 키·예산·실행 옵션을 설정해야 한다. 설정과 검수 흐름은 [AI 생성 가이드](generation.md)를 참고한다. Batch API와 자동 스케줄은 아직 없다.
