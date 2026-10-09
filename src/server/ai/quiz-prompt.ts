@@ -1,7 +1,7 @@
 import { QUIZ_QUALITY_INSTRUCTIONS } from "./quiz-quality";
 import type { QuizGenerationInput } from "../../features/quiz/domain/quiz";
 
-export const QUIZ_PROMPT_VERSION = "quiz.v2";
+export const QUIZ_PROMPT_VERSION = "quiz.v3";
 
 export const QUIZ_INSTRUCTIONS = `당신은 한국어 상식 퀴즈의 초안을 작성합니다.
 입력 JSON의 category, difficulty, count 설정을 따르세요.

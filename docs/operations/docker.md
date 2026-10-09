@@ -9,15 +9,18 @@ npm run db:env
 npm run docker:up
 ```
 
-접속: <http://127.0.0.1:3001>. `npm run docker:logs`로 앱 로그를 보고 `npm run docker:down`으로 컨테이너를 내린다. DB 볼륨은 유지된다. 최초 실행에는 Node 이미지와 패키지 다운로드가 필요하다.
+앱 접속: <http://127.0.0.1:3001>. DB 관리 화면: <http://127.0.0.1:8080>. [Adminer 로그인·문제 조회](inspect-db.md)를 참고한다. `npm run docker:logs`로 앱 로그를 보고 `npm run docker:down`으로 컨테이너를 내린다. DB 볼륨은 유지된다. 최초 실행에는 Node 이미지와 패키지 다운로드가 필요하다.
 
 ## 구성
 
 | 서비스 | 역할 |
 | --- | --- |
 | db | PostgreSQL 18, 영속 볼륨, 준비 상태 확인 |
+| adminer | 로컬 DB 관리 GUI, 8080, `tools` 프로필 |
 | migrate | 현재 SQL 마이그레이션을 한 번 적용하고 종료 |
 | app | Next.js 프로덕션 서버, 3001 → 컨테이너 3000 |
+
+`npm run docker:up`은 `app`과 `tools` 프로필을 함께 켠다. `npm run db:gui`는 DB와 Adminer만 켠다. CI의 `app` 프로필은 관리 GUI를 실행하지 않는다. DB와 Adminer에는 `unless-stopped` 재시작 정책을 적용한다.
 
 앱은 DB 준비 및 마이그레이션 성공 후 시작한다. 이미지 내부에서 root 대신 `node` 사용자로 실행한다. `/api/health`는 앱 응답, `/api/health/ready`는 DB와 계정·퀴즈 핵심 스키마를 확인한다. Next.js standalone 출력으로 실행 의존성만 복사한다. `.dockerignore`로 `.env*`, 개발 설정, Git, 로컬 빌드 결과를 제외하며 비밀값은 실행 시에만 전달한다.
 

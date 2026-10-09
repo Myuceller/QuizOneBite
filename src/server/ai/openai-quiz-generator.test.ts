@@ -47,7 +47,7 @@ describe("OpenAIQuizGenerator", () => {
     expect(request).not.toHaveProperty("temperature");
     expect(result).toEqual({
       quiz,
-      metadata: { provider: "openai", model: "gpt-6-astra", promptVersion: "quiz.v2", verificationStatus: "unreviewed" },
+      metadata: { provider: "openai", model: "gpt-6-astra", promptVersion: "quiz.v3", verificationStatus: "unreviewed" },
     });
   });
 

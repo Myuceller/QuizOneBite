@@ -9,7 +9,7 @@ import type { QuizGenerationResult } from '../../features/quiz/ports/quiz-genera
 import { BankGenerationInputSchema, generationTaxonomy, type BankGenerationInput } from '../../features/quiz/domain/taxonomy.ts';
 import { QUIZ_QUALITY_INSTRUCTIONS } from './quiz-quality.ts';
 
-export const BANK_PROMPT_VERSION = 'bank.evidence.v2';
+export const BANK_PROMPT_VERSION = 'bank.evidence.v3';
 export const PRICING_VERSION = 'astra-standard-2026-10-06';
 export const RESERVATION_MICROS = 500_000; // $0.50, conservative per-call budget reservation.
 export const EvidenceSchema = z.array(z.object({

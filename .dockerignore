@@ -3,6 +3,7 @@ node_modules
 .git
 .agents
 .codex
+.local
 .env*
 *.tsbuildinfo
 npm-debug.log*

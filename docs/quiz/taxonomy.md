@@ -20,7 +20,7 @@
 
 `src/features/quiz/domain/taxonomy.ts`가 위 9개 대분류·49개 소분류의 실행 가능한 목록이다. `npm run bank:generate -- --list-subcategories`로 ID를 확인한다. 예: `science-earth`(과학·자연 / 지구·기후), `lifestyle-cooking`(생활·음식 / 요리·조리 원리), `geography-countries`(지리·세계 / 국가·수도).
 
-운영자 생성에는 `subcategory`가 필수이고 `category`와의 매핑을 검증한다. 기술·사회·인문·생활·스포츠는 현재 `general` 필터로 출제한다. 새 초안에는 `{version, subcategoryId, major, minor, tags}`를 서버에서 자동 기록한다. 기존 문항의 이전 편집 분류는 보존한다. 소분류는 전문가 시험 범위를 뜻하지 않으며 모든 분야에 [상식 품질 기준](question-quality.md)을 동일하게 적용한다.
+운영자 생성에는 `subcategory`가 필수이고 `category`와의 매핑을 검증한다. 기술·사회·인문·생활·스포츠는 현재 `general` 필터로 출제한다. 새 초안에는 `{version, subcategoryId, major, minor, tags}`를 서버에서 자동 기록한다. 기존 문항의 이전 편집 분류는 보존한다. 소분류는 전문가 시험 범위를 뜻하지 않으며 모든 분야에 [상식 품질 기준](quality.md)을 동일하게 적용한다.
 
 ## 현재 적용 범위
 
@@ -30,8 +30,8 @@
 
 ## 대표 문제 생성 자료
 
-- [과학](examples/science-evidence.json): NASA 행성 자료.
-- [역사](examples/history-evidence.json): 미국 의회도서관·국립문서기록관리청 자료.
-- [지리](examples/geography-evidence.json): NOAA 해양 자료.
+- [과학](../examples/science-evidence.json): NASA 행성 자료.
+- [역사](../examples/history-evidence.json): 미국 의회도서관·국립문서기록관리청 자료.
+- [지리](../examples/geography-evidence.json): NOAA 해양 자료.
 
 자료는 2026-10-06 원문을 대조해 요약했다. URL이 붙어 있어도 생성 결과의 정답·오답·해설은 게시 전에 별도로 검토한다. 정답이 포함된 생성 결과는 DB에서 관리하며 이 문서나 Git에 복사하지 않는다. 로컬 DB 데이터는 Render DB로 자동 동기화되지 않는다.
