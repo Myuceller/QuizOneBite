@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./interactions.css";
 
 export const metadata: Metadata = {
   title: "퀴즈퀴즈 · 상식 퀴즈",

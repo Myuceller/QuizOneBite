@@ -1,12 +1,13 @@
 "use client";
 import { useState } from "react";
 import { authClient } from "../client";
+import { BusyIndicator } from "@/components/busy-indicator";
 
 export function LogoutButton() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
   return <span className="logout-control">
-    <button className="text-button" disabled={busy} onClick={async () => {
+    <button className="text-button" disabled={busy} aria-busy={busy} onClick={async () => {
       setBusy(true); setError(false);
       try {
         const result = await authClient.signOut();
@@ -15,7 +16,7 @@ export function LogoutButton() {
         // eslint-disable-next-line @next/next/no-location-assign-relative-destination
         window.location.assign("/login");
       } catch { setError(true); setBusy(false); }
-    }}>{busy ? "로그아웃 중…" : "로그아웃"}</button>
+    }}>{busy ? <><BusyIndicator />로그아웃 중…</> : "로그아웃"}</button>
     {error && <span role="alert" className="logout-error">다시 시도해 주세요.</span>}
   </span>;
 }

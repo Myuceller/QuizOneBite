@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import type { QuizPreview as QuizPreviewData } from "@/features/quiz/domain/quiz";
 import Link from "next/link";
 import { QuestionList } from "./question-list";
+import { BusyIndicator } from "@/components/busy-indicator";
 
 const categories = [
   { value: "general", label: "일반 상식" },
@@ -89,8 +90,8 @@ export function QuizPreview({ signedIn = false, requiresLogin = false }: { signe
                 ))}
               </select>
             </label>
-            {requiresLogin && !signedIn ? <Link className="primary-button button-link" href="/login">로그인하고 시작하기</Link> : <button className="primary-button" type="submit">
-              {loading ? "문제 불러오는 중…" : "문제 미리보기"}
+            {requiresLogin && !signedIn ? <Link className="primary-button button-link" href="/login">로그인하고 시작하기</Link> : <button className="primary-button" type="submit" aria-busy={loading}>
+              {loading ? <><BusyIndicator />문제 불러오는 중…</> : "문제 미리보기"}
             </button>}
           </fieldset>
         </form>

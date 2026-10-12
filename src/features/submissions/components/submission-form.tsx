@@ -4,6 +4,7 @@ import { QUIZ_SUBCATEGORIES } from '@/features/quiz/domain/taxonomy';
 import { getSubcategory } from '@/features/quiz/domain/taxonomy';
 import type { SubmissionSummary } from '../domain/submission';
 import styles from './submission-form.module.css';
+import { BusyIndicator } from '@/components/busy-indicator';
 const majors = [...new Map(QUIZ_SUBCATEGORIES.map(s => [s.major, s.majorLabel])).entries()];
 const states = { pending: '검토 대기', approved: '게시 승인', rejected: '보완 필요' };
 export function SubmissionForm({ initial }: { initial: SubmissionSummary[] }) {
@@ -55,7 +56,7 @@ export function SubmissionForm({ initial }: { initial: SubmissionSummary[] }) {
         <label className="field">출처 이름<input name="sourceTitle" maxLength={200} required placeholder="기관·책·문서의 이름" /></label>
         <label className="field">출처 링크<input name="sourceUrl" type="url" pattern="https://.*" maxLength={2000} required placeholder="https://" /></label>
         <p className={styles.hint}>정답을 확인할 수 있는 원문 링크를 남겨 주세요. 개인정보와 다른 문제집의 문항을 그대로 올리지 말아 주세요. 최근 24시간 동안 최대 5개까지 제출할 수 있어요.</p>
-        <button className="primary-button" type="submit">{busy ? '문제를 보내고 있어요…' : '검토 요청하기'}</button>
+        <button className="primary-button" type="submit" aria-busy={busy}>{busy ? <><BusyIndicator />문제를 보내고 있어요…</> : <>검토 요청하기<span className="button-arrow" aria-hidden="true">→</span></>}</button>
       </fieldset>
       {error && <p className="error-message" role="alert">{error}</p>}
       <p className={styles.success} role="status">{success}</p>

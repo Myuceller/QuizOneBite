@@ -15,6 +15,8 @@ Next.js App Router, React, TypeScript 기반 상식 퀴즈 웹앱이다. DB는 P
 - [Render 테스트·운영 배포](docs/operations/render.md)
 - [Next.js 프로젝트 스킬](.agents/skills/quizquiz-nextjs/SKILL.md)
 - [AI 프로젝트 스킬](.agents/skills/quizquiz-ai/SKILL.md)
+- [문제 품질 QA·검수 역할](docs/quiz/qa.md)
+- [QA 프로젝트 스킬](.agents/skills/quizquiz-qa/SKILL.md)
 
 ## 구현 경계
 

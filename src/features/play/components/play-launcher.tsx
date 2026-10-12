@@ -5,6 +5,7 @@ import { useRef, useState, type FormEvent } from 'react';
 import { categoryLabels, difficultyLabels } from '@/features/quiz/domain/labels';
 import type { PlaySession, StartPlay } from '../domain/play';
 import styles from './play-launcher.module.css';
+import { BusyIndicator } from '@/components/busy-indicator';
 
 type Topic = StartPlay['category'];
 const topics: { value: Topic; label: string; hint: string }[] = [
@@ -56,12 +57,12 @@ export function PlayLauncher({ signedIn }: { signedIn: boolean }) {
   }
   return <section aria-labelledby="play-title">
     <div className="section-heading"><h2 id="play-title">오늘의 상식 한 입</h2><span className={styles.roundBadge}>최대 5문제 · 네 가지 보기</span></div>
-    <form className={styles.panel} onSubmit={start}>
+    <form className={styles.panel} onSubmit={start} data-topic={category}>
       <fieldset className={styles.group} disabled={loading}>
         <legend className={styles.legend}><span aria-hidden="true">01</span>어떤 주제가 끌리나요?</legend>
         <p className={styles.groupHint}>하나를 고르거나, 골고루 만나보세요.</p>
         <div className={styles.topics}>
-          {topics.map(topic => <label key={topic.value} className={styles.topicCard}>
+          {topics.map(topic => <label key={topic.value} className={styles.topicCard} data-topic={topic.value}>
             <input className="visually-hidden" type="radio" name="category" value={topic.value} aria-label={topic.label} checked={category === topic.value} onChange={() => setCategory(topic.value)} />
             <span className={`${styles.topicIcon} ${styles[topic.value]}`}><TopicIcon topic={topic.value} /></span>
             <span className={styles.check} aria-hidden="true">✓</span>
@@ -83,8 +84,11 @@ export function PlayLauncher({ signedIn }: { signedIn: boolean }) {
         </div>
       </fieldset>
       <div className={styles.startRow}>
-        <div className={styles.selection}><span>오늘의 한 입</span><strong>{topics.find(topic => topic.value === category)?.label} <span aria-hidden="true">·</span> {difficulty === 'all' ? '모든 난이도' : difficultyLabels[difficulty]}</strong></div>
-        {signedIn ? <button className={`primary-button ${styles.startButton}`} type="submit" disabled={loading}>{loading ? '문제 고르는 중…' : '퀴즈 시작하기'}<span aria-hidden="true">→</span></button> : <Link href="/login" className={`primary-button button-link ${styles.startButton}`}>로그인하고 풀기<span aria-hidden="true">→</span></Link>}
+        <div className={styles.selectionTicket}>
+          <span key={category} className={`${styles.ticketIcon} ${styles[category]}`}><TopicIcon topic={category} /></span>
+          <div className={styles.selection}><span>오늘의 한 입</span><strong key={`${category}:${difficulty}`} className={styles.selectionValue}>{topics.find(topic => topic.value === category)?.label} <span aria-hidden="true">·</span> {difficulty === 'all' ? '모든 난이도' : difficultyLabels[difficulty]}</strong></div>
+        </div>
+        {signedIn ? <button className={`primary-button ${styles.startButton}`} type="submit" disabled={loading} aria-busy={loading}>{loading ? <><BusyIndicator />문제 고르는 중…</> : <>퀴즈 시작하기<span className="button-arrow" aria-hidden="true">→</span></>}</button> : <Link href="/login" className={`primary-button button-link ${styles.startButton}`}>로그인하고 풀기<span className="button-arrow" aria-hidden="true">→</span></Link>}
       </div>
       <span className="visually-hidden" role="status">{loading ? '문제를 고르고 있어요. 잠시만 기다려 주세요.' : ''}</span>
       {error && <p className="error-message" role="alert">{error}</p>}
