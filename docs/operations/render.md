@@ -1,5 +1,7 @@
 # Render 배포 시작하기
 
+최근 문제 데이터 반영 결과는 [2026-10-12 단답형 정답 개정 기록](../records/2026/2026-10-12-short-correct-answers.md)에 있다. 로컬·테스트 DB 모두 현재 게시 문제는 348개다. 앞선 검수는 [QA·동기화 기록](../records/2026/2026-10-12-question-bank-qa.md), 이번에 함께 배포하는 화면 변경은 [UI 인터랙션 기록](../records/2026/2026-10-12-ui-interactions.md)에 있다. 로컬 문제는 코드 배포 시 원격으로 자동 복사되지 않는다.
+
 호스팅은 Render Web Service(Docker)와 Render Postgres로 결정했다. staging 앱·DB가 생성되어 배포되었다. 테스트 주소는 <https://quizonebite-staging.onrender.com>이다. 운영은 아직 생성하지 않았으며 별도 Blueprint를 사용한다.
 
 ## 환경 구성

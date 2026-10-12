@@ -1,6 +1,8 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { BusyIndicator } from '@/components/busy-indicator';
+import { Celebration } from '@/components/celebration';
 import type { PlayQuestion, PlaySession, Rating, ReportReason } from '../domain/play';
 
 async function post(url: string, body: unknown) {
@@ -17,7 +19,10 @@ function QuestionFeedback({ question, onSave }: { question: PlayQuestion; onSave
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const saving = useRef(false);
   async function save(next?: Rating) {
+    if (saving.current) return;
+    saving.current = true;
     setBusy(true); setError(''); setMessage('');
     try {
       await post(`/api/questions/${question.id}/${next ? 'rating' : 'report'}`, next ?? { reason: reportReason });
@@ -25,7 +30,7 @@ function QuestionFeedback({ question, onSave }: { question: PlayQuestion; onSave
       if (next) { setRating(next); setMessage('평가를 저장했어요. 나중에 바꿀 수도 있어요.'); }
       else { setReported(true); setMessage('오류 신고를 접수했어요. 다시 확인할게요.'); }
     } catch (caught) { setError(caught instanceof Error ? caught.message : '연결을 확인해 주세요.'); }
-    finally { setBusy(false); }
+    finally { saving.current = false; setBusy(false); }
   }
   return <section className="question-feedback" aria-label="이 문제 평가">
     <h3>이 문제, 어땠나요?</h3><p className="bank-note">좋은 문제는 다른 사람에게 더 자주 소개돼요. 평가는 선택이에요.</p>
@@ -40,7 +45,7 @@ function QuestionFeedback({ question, onSave }: { question: PlayQuestion; onSave
         <button className="secondary-button" onClick={() => save()}>오류 신고하기</button>
       </fieldset>}
     </details>
-    <p className="feedback-status" role="status">{busy ? '저장 중…' : message}</p>{error && <p role="alert" className="error-message">{error}</p>}
+    <p className="feedback-status" role="status">{busy ? <><BusyIndicator />저장 중…</> : message && <span key={message} className="feedback-saved"><span aria-hidden="true">✓ </span>{message}</span>}</p>{error && <p role="alert" className="error-message">{error}</p>}
   </section>;
 }
 
@@ -75,33 +80,42 @@ export function PlayGame({ initialSession }: { initialSession: PlaySession }) {
   }
   function move(index: number) { focusOnMove.current = true; setCursor(index); setSelected(null); setError(''); setFeedback(null); }
   if (!question) return <section className="preview-panel result-summary play-enter" aria-labelledby="result-title">
+    <Celebration />
+    <div className="completion-badge"><span aria-hidden="true">✦</span> 한 입 완료!</div>
+    <div className="score-medallion" aria-hidden="true">
+      <svg viewBox="0 0 100 100"><circle className="score-track" cx="50" cy="50" r="42" /><circle className="score-fill" cx="50" cy="50" r="42" pathLength="100" style={{ '--score-gap': 100 - (session.questions.length ? session.score / session.questions.length * 100 : 0) } as CSSProperties} /></svg>
+      <span><strong>{session.score}</strong><small>/ {session.questions.length}</small></span>
+    </div>
     <p className="eyebrow">오늘도 한 입 더 알아갔어요</p><h1 ref={heading} tabIndex={-1} id="result-title">{session.questions.length}문제 중 {session.score}문제 정답!</h1>
     <p className="intro-description">해설을 다시 읽거나 문제에 평가를 남겨보세요.</p>
-    <ol className="result-list">{session.questions.map((q, i) => <li key={q.id}><button onClick={() => move(i)}><span className={q.result?.correct ? 'correct-text' : 'incorrect-text'}>{q.result?.correct ? '정답' : '오답'}</span><span>{q.question}</span><span aria-hidden="true">→</span></button></li>)}</ol>
+    <ol className="result-list">{session.questions.map((q, i) => <li key={q.id} style={{ '--item-delay': `${i * 45}ms` } as CSSProperties}><button onClick={() => move(i)}><span className={q.result?.correct ? 'correct-text' : 'incorrect-text'}>{q.result?.correct ? '정답' : '오답'}</span><span>{q.question}</span><span className="button-arrow" aria-hidden="true">→</span></button></li>)}</ol>
     <div className="play-links"><Link className="primary-button button-link" href="/">다른 문제 풀기</Link><Link href="/play/history">풀이 기록 보기</Link></div>
   </section>;
   const result = question.result;
   return <section aria-labelledby="question-title">
-    <div className="section-heading"><h2>상식 한 입</h2><span>{cursor + 1} / {session.questions.length}{question.isReview ? ' · 복습 문제' : ''}</span></div>
+    <div className="section-heading"><h2>상식 한 입</h2><span className="question-counter" key={cursor}><strong>{cursor + 1}</strong> / {session.questions.length}{question.isReview ? ' · 복습 문제' : ''}</span></div>
     <div className="play-progress" role="progressbar" aria-valuenow={session.questions.filter(q => q.result).length} aria-valuemin={0} aria-valuemax={session.questions.length} aria-label="풀이 진행률">
       <span style={{ transform: `scaleX(${session.questions.filter(q => q.result).length / session.questions.length})` }} />
     </div>
+    <ol className="play-steps" aria-label="문제별 진행 상태">{session.questions.map((q, i) => <li key={q.id} className={q.result ? q.result.correct ? 'step-correct' : 'step-incorrect' : ''} aria-current={i === cursor ? 'step' : undefined}><span aria-hidden="true">{q.result ? q.result.correct ? '✓' : '−' : i + 1}</span><span className="visually-hidden">문제 {i + 1}: {q.result ? q.result.correct ? '정답' : '오답' : '아직 풀지 않음'}</span></li>)}</ol>
     <article key={question.id} className={`question-card play-card ${feedback ? `feedback-${feedback}` : 'play-enter'}`}>
+      {feedback === 'correct' && <Celebration />}
       <p className="question-number">문제 {String(cursor + 1).padStart(2, '0')}</p><h3 ref={heading} tabIndex={-1} id="question-title">{question.question}</h3>
       <fieldset className="answer-options" disabled={busy || !!result}><legend className="visually-hidden">정답 하나 선택</legend>
         {question.options.map((option, i) => <label key={i} className={`answer-option ${result?.correctAnswerIndex === i ? 'answer-correct' : ''} ${result && result.selectedIndex === i && !result.correct ? 'answer-incorrect' : ''}`}>
-          <input type="radio" name={`answer-${question.id}`} checked={(result?.selectedIndex ?? selected) === i} onChange={() => setSelected(i)} />
+          <input className="visually-hidden" type="radio" name={`answer-${question.id}`} checked={(result?.selectedIndex ?? selected) === i} onChange={() => setSelected(i)} />
+          <span className="answer-marker" aria-hidden="true">{result ? result.correctAnswerIndex === i ? '✓' : result.selectedIndex === i ? '−' : i + 1 : selected === i ? '✓' : i + 1}</span>
           <span>{option}</span>{result && result.correctAnswerIndex === i && <strong>정답</strong>}{result && !result.correct && result.selectedIndex === i && <strong>내 답</strong>}
         </label>)}
       </fieldset>
-      {!result && <button className="primary-button answer-submit" disabled={busy || selected === null} onClick={answer}>{busy ? '답 확인 중…' : '정답 확인하기'}</button>}
+      {!result && <div className="answer-actions"><p className="selection-hint" role="status"><span key={selected}>{selected === null ? '마음이 가는 답을 골라보세요.' : `${selected + 1}번을 골랐어요. 정답을 확인해볼까요?`}</span></p><button className="primary-button answer-submit" disabled={busy || selected === null} aria-busy={busy} onClick={answer}>{busy ? <><BusyIndicator />답 확인 중…</> : <>정답 확인하기 <span className="button-arrow" aria-hidden="true">→</span></>}</button></div>}
       {error && <p role="alert" className="error-message">{error} <button className="text-button" onClick={() => window.location.reload()}>저장된 풀이 다시 불러오기</button></p>}
       {result && <>
-        <div className={`answer-explanation ${result.correct ? 'explanation-correct' : 'explanation-incorrect'}`} role="status"><div className="answer-verdict"><span className="verdict-icon" aria-hidden="true">{result.correct ? '✓' : '↗'}</span><strong className={result.correct ? 'correct-text' : 'incorrect-text'}>{result.correct ? '맞았어요!' : '이번에 새로 알아가요.'}</strong></div><p>{result.explanation}</p>
+        <div className={`answer-explanation ${result.correct ? 'explanation-correct' : 'explanation-incorrect'}`} role="status"><div className="answer-verdict"><span className="verdict-decoration"><span className="verdict-icon" aria-hidden="true">{result.correct ? '✓' : '↗'}</span>{feedback === 'correct' && <span className="success-burst" aria-hidden="true">{[0,1,2,3,4,5].map(n => <i key={n} style={{ '--burst-angle': `${n * 60}deg` } as CSSProperties} />)}</span>}</span><strong className={result.correct ? 'correct-text' : 'incorrect-text'}>{result.correct ? '맞았어요!' : '이번에 새로 알아가요.'}</strong></div><p>{result.explanation}</p>
           <ul className="source-list">{result.sources.map(source => <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer">{source.title} ↗</a></li>)}</ul>
         </div>
         <QuestionFeedback key={question.id} question={question} onSave={rating => setSession(current => ({ ...current, questions: current.questions.map(q => q.id === question.id ? { ...q, ...(rating ? { rating } : { reported: true }) } : q) }))} />
-        <div className="play-links"><button className="primary-button" onClick={() => move(cursor + 1)}>{cursor + 1 === session.questions.length ? '결과 보기' : '다음 문제'}</button>{session.completed && <button className="text-button" onClick={() => move(session.questions.length)}>전체 결과로</button>}</div>
+        <div className="play-links"><button className="primary-button" onClick={() => move(cursor + 1)}>{cursor + 1 === session.questions.length ? '결과 보기' : '다음 문제'}<span className="button-arrow" aria-hidden="true">→</span></button>{session.completed && <button className="text-button" onClick={() => move(session.questions.length)}>전체 결과로</button>}</div>
       </>}
     </article>
   </section>;

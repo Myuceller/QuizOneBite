@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { authClient } from "../client";
+import { BusyIndicator } from "@/components/busy-indicator";
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const signup = mode === "signup";
@@ -51,7 +52,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         </label>
         {signup && <label className="field">비밀번호 확인<input name="confirm" type={visible ? "text" : "password"} autoComplete="new-password" maxLength={128} placeholder="비밀번호를 한 번 더 입력해 주세요" required /></label>}
         {error && <p className="error-message" role="alert">{error}</p>}
-        <button className="primary-button" type="submit">{busy ? "잠시만 기다려 주세요…" : signup ? "계정 만들기" : "로그인"}</button>
+        <button className="primary-button" type="submit" aria-busy={busy}>{busy ? <><BusyIndicator />잠시만 기다려 주세요…</> : signup ? "계정 만들기" : "로그인"}</button>
       </fieldset>
     </form>
     <p className="auth-switch">{signup ? "이미 계정이 있나요?" : "아직 계정이 없나요?"} <Link href={signup ? "/login" : "/signup"}>{signup ? "로그인" : "회원가입"}</Link></p>

@@ -6,8 +6,8 @@
 
 | 폴더 | 역할 | 문서 |
 | --- | --- | --- |
-| `architecture/` | 앱 구조·구현 경계·인증 | [전체 구조](architecture/overview.md), [가입·인증·세션](architecture/auth.md) |
-| `quiz/` | 문제 은행·분류·출제 기준·사용자 제안 | [문제 은행](quiz/bank.md), [대분류·소분류](quiz/taxonomy.md), [출제 품질 기준](quiz/quality.md), [사용자 문제 제출](quiz/community-submissions.md) |
+| `architecture/` | 앱 구조·구현 경계·인증 | [전체 구조](architecture/overview.md), [가입·인증·세션](architecture/auth.md), [UI 인터랙션](architecture/ui-interactions.md) |
+| `quiz/` | 문제 은행·분류·출제 기준·사용자 제안 | [문제 은행](quiz/bank.md), [대분류·소분류](quiz/taxonomy.md), [출제 품질 기준](quiz/quality.md), [QA 에이전트](quiz/qa.md), [사용자 문제 제출](quiz/community-submissions.md) |
 | `ai/` | AI 연결 계약·운영자 생성·비용 제한 | [AI 연결](ai/integration.md), [생성 운영 가이드](ai/generation.md) |
 | `operations/` | DB·Docker·호스팅 운영 | [PostgreSQL](operations/database.md), [DB 직접 조회](operations/inspect-db.md), [Docker 실행·배포](operations/docker.md), [Render](operations/render.md) |
 | `records/연도/` | 날짜별 작업 결과·검증·비용·적용 환경 | [작업 기록 목록](records/README.md) |
