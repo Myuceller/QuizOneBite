@@ -1,5 +1,6 @@
 import 'server-only';
 import { randomInt } from 'node:crypto';
+import { QuestionImageSchema, type QuestionImage } from '@/features/play/domain/question-image';
 import type { Pool, PoolClient } from 'pg';
 import type { PlayRepository } from '@/features/play/ports/play-repository';
 import { PlayError, type PlaySession, type PlayHistory, type Rating, type ReportReason, type Source, type StartPlay } from '@/features/play/domain/play';
@@ -7,8 +8,9 @@ import { selectQuestions, shuffleOptions, type Candidate } from '@/features/play
 import { getDatabasePool } from './pool';
 import { latestAnswers, collectionMembership, readCollection, readDashboard } from './learning-queries';
 
-type BankRow = Candidate & { question: string; options: string[]; correct_answer_index: number; explanation: string; sources: Source[] };
+type BankRow = Candidate & { image: QuestionImage | null; question: string; options: string[]; correct_answer_index: number; explanation: string; sources: Source[] };
 type ItemRow = {
+  image: QuestionImage | null;
   question_id: string; position: number; question: string; options: string[]; is_review: boolean;
   selected_index: number | null; correct_answer_index: number; explanation: string; sources: Source[];
   rating_value: number | null; rating_reason: 'obvious' | 'ambiguous' | 'options' | null; reported: boolean; bookmarked: boolean;
@@ -41,7 +43,7 @@ async function readSession(db: Queryable, userId: string, id: string): Promise<P
     questions: items.rows.reverse().map(i => ({
       id: i.question_id, position: i.position, question: i.question, options: i.options, isReview: i.is_review,
       rating: i.rating_value === 1 ? { value: 1 } : i.rating_value === -1 ? { value: -1, reason: i.rating_reason! } : null,
-      reported: i.reported, bookmarked: i.bookmarked,
+      reported: i.reported, bookmarked: i.bookmarked, image: i.image ? QuestionImageSchema.parse(i.image) : null,
       // Explicit projection: never return the answer or evidence before submission.
       ...(i.selected_index === null ? {} : { result: {
         selectedIndex: i.selected_index, correctAnswerIndex: i.correct_answer_index,
@@ -69,8 +71,8 @@ async function candidates(db: Queryable, userId: string, category: string, diffi
 
 async function appendQuestion(db: Queryable, id: string, position: number, q: BankRow) {
   const shuffled = shuffleOptions(q.options, q.correct_answer_index, random);
-  await db.query(`INSERT INTO quizquiz.play_items(session_id,position,question_id,question,options,correct_answer_index,explanation,sources,is_review,category)
-    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, [id, position, q.id, q.question, shuffled.options, shuffled.correctAnswerIndex, q.explanation, JSON.stringify(q.sources), !!q.lastSeen, q.category]);
+  await db.query(`INSERT INTO quizquiz.play_items(session_id,position,question_id,question,options,correct_answer_index,explanation,sources,is_review,category,image)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`, [id, position, q.id, q.question, shuffled.options, shuffled.correctAnswerIndex, q.explanation, JSON.stringify(q.sources), !!q.lastSeen, q.category, q.image ? JSON.stringify(QuestionImageSchema.parse(q.image)) : null]);
 }
 
 export class PostgresPlayRepository implements PlayRepository {
@@ -120,8 +122,8 @@ export class PostgresPlayRepository implements PlayRepository {
       if (picked.length !== 5) throw new PlayError('EMPTY_DAILY', '오늘의 5문제를 준비 중이에요. 잠시 후 다시 와주세요.', 409);
       await client.query('INSERT INTO quizquiz.daily_sets(day) VALUES($1)', [day]);
       for (const [position, q] of picked.entries()) await client.query(`INSERT INTO quizquiz.daily_items
-        (day,position,question_id,category,difficulty,question,options,correct_answer_index,explanation,sources)
-        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, [day, position, q.id, q.category, q.difficulty, q.question, q.options, q.correct_answer_index, q.explanation, JSON.stringify(q.sources)]);
+        (day,position,question_id,category,difficulty,question,options,correct_answer_index,explanation,sources,image)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`, [day, position, q.id, q.category, q.difficulty, q.question, q.options, q.correct_answer_index, q.explanation, JSON.stringify(q.sources), q.image ? JSON.stringify(QuestionImageSchema.parse(q.image)) : null]);
     }
     const items = await client.query<BankRow>(`SELECT d.*, d.question_id AS id, NULL AS "lastSeen"
       FROM quizquiz.daily_items d JOIN quizquiz.bank_questions b ON b.id=d.question_id

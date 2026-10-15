@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { QuestionImage } from './question-image';
 import { QUIZ_CATEGORIES, QUIZ_DIFFICULTIES } from '@/features/quiz/domain/quiz';
 
 export const StartPlaySchema = z.object({
@@ -28,12 +29,12 @@ export type ReportReason = z.infer<typeof ReportSchema>['reason'];
 export type Source = { title: string; url: string };
 export type PlayQuestion = {
   id: string; position: number; question: string; options: string[]; isReview: boolean;
-  rating: Rating | null; reported: boolean; bookmarked: boolean;
+  image?: QuestionImage | null; rating: Rating | null; reported: boolean; bookmarked: boolean;
   result?: { selectedIndex: number; correctAnswerIndex: number; correct: boolean; explanation: string; sources: Source[] };
 };
 export type PlaySession = { id: string; category: string; difficulty: string; completed: boolean; score: number; questions: PlayQuestion[]; mode: 'standard' | 'endless'; answeredCount: number; source: LearningSource; dailyDay: string | null };
 export type PlayHistory = { id: string; createdAt: string; count: number; answered: number; score: number; mode: 'standard' | 'endless'; completed: boolean; source: LearningSource; dailyDay: string | null };
-export type LearningCollection = { total: number; page: number; items: { id: string; question: string; category: string; difficulty: string; available: boolean }[] };
+export type LearningCollection = { total: number; page: number; items: { id: string; question: string; category: string; difficulty: string; image: QuestionImage | null; available: boolean }[] };
 export type LearningDashboard = {
   categories: { category: string; answered: number; correct: number }[];
   wrongCount: number; bookmarkCount: number;

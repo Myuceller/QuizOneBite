@@ -1,5 +1,6 @@
 import 'server-only';
 import type { Pool } from 'pg';
+import { QuestionImageSchema } from '@/features/play/domain/question-image';
 import type { LearningCollection, LearningDashboard } from '@/features/play/domain/play';
 
 type Queryable = Pick<Pool, 'query'>;
@@ -15,12 +16,12 @@ export const collectionMembership = `(CASE WHEN $2='wrong' THEN EXISTS (
 
 export async function readCollection(db: Queryable, userId: string, source: 'wrong' | 'bookmarks', page: number): Promise<LearningCollection> {
   const result = await db.query(`WITH latest AS (${latestAnswers}), collection AS (
-    SELECT b.id, b.question, b.category, b.difficulty, b.status='published' AS available
+    SELECT b.id, b.question, b.category, b.difficulty, b.image, b.status='published' AS available
     FROM quizquiz.bank_questions b WHERE ${collectionMembership}
   ) SELECT (SELECT count(*)::int FROM collection) AS total,
     COALESCE((SELECT jsonb_agg(row_to_json(p)) FROM (SELECT * FROM collection ORDER BY available DESC, id LIMIT 20 OFFSET $3) p),'[]') AS items`,
   [userId, source, (page - 1) * 20]);
-  return { total: result.rows[0].total, page, items: result.rows[0].items };
+  return { total: result.rows[0].total, page, items: (result.rows[0].items as LearningCollection['items']).map(q => ({ ...q, image: q.image ? QuestionImageSchema.parse(q.image) : null })) };
 }
 
 export async function readDashboard(db: Queryable, userId: string): Promise<LearningDashboard> {

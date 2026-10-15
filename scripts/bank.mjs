@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
 import pg from 'pg';
 import { z } from 'zod';
+import { QuestionImageSchema } from '../src/features/play/domain/question-image.ts';
 
 // Operator-only CLI. Importing AI output never publishes it.
 const source = z.object({ title: z.string().trim().min(1).max(200), url: z.url().refine(url => new URL(url).protocol === 'https:', 'Use HTTPS sources') }).strict();
@@ -10,6 +11,7 @@ const question = z.object({
   difficulty: z.enum(['easy','medium','hard']), question: z.string().trim().min(1).max(500),
   options: z.array(z.string().trim().min(1).max(200)).length(4).refine(options => new Set(options.map(o => o.replace(/\s+/g, ' ').toLowerCase())).size === 4),
   correctAnswerIndex: z.number().int().min(0).max(3), explanation: z.string().trim().min(1).max(1000),
+  image: QuestionImageSchema.nullable().optional(),
   sources: z.array(source).max(10).default([]),
   provenance: z.object({ provider: z.string().max(100), model: z.string().max(100).optional(), promptVersion: z.string().max(100).optional() }).passthrough().default({ provider: 'manual-import' }),
 }).strict();
@@ -32,14 +34,15 @@ try {
   await client.connect(); await client.query('BEGIN');
   if (action === 'import') {
     for (const q of imported) {
+      if (q.image) await readFile(new URL(`../public${q.image.src}`, import.meta.url));
       const id = q.id ?? randomUUID();
       const existing = await client.query('SELECT status FROM quizquiz.bank_questions WHERE id=$1 FOR UPDATE', [id]);
       if (existing.rowCount && existing.rows[0].status !== 'draft') throw new Error('Only drafts may be edited. Retire the old question and import a new ID for content corrections.');
-      await client.query(`INSERT INTO quizquiz.bank_questions(id,category,difficulty,question,options,correct_answer_index,explanation,sources,provenance)
-        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT(id) DO UPDATE SET category=EXCLUDED.category,difficulty=EXCLUDED.difficulty,
+      await client.query(`INSERT INTO quizquiz.bank_questions(id,category,difficulty,question,options,correct_answer_index,explanation,sources,provenance,image)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT(id) DO UPDATE SET category=EXCLUDED.category,difficulty=EXCLUDED.difficulty,
         question=EXCLUDED.question,options=EXCLUDED.options,correct_answer_index=EXCLUDED.correct_answer_index,
-        explanation=EXCLUDED.explanation,sources=EXCLUDED.sources,provenance=EXCLUDED.provenance`,
-      [id,q.category,q.difficulty,q.question,q.options,q.correctAnswerIndex,q.explanation,JSON.stringify(q.sources),JSON.stringify(q.provenance)]);
+        explanation=EXCLUDED.explanation,sources=EXCLUDED.sources,provenance=EXCLUDED.provenance,image=EXCLUDED.image`,
+      [id,q.category,q.difficulty,q.question,q.options,q.correctAnswerIndex,q.explanation,JSON.stringify(q.sources),JSON.stringify(q.provenance),q.image ? JSON.stringify(q.image) : null]);
       console.log(`Draft: ${id}`);
     }
   } else if (action === 'show') {
@@ -56,7 +59,7 @@ try {
     console.log(JSON.stringify(rows.rows, null, 2));
   } else if (action === 'export') {
     const rows = await client.query(`SELECT id,category,difficulty,question,options,correct_answer_index AS "correctAnswerIndex",explanation,sources,
-      provenance
+      provenance,image
       FROM quizquiz.bank_questions ORDER BY id`);
     // An export is re-imported as drafts so publication cannot happen accidentally.
     await writeFile(target, JSON.stringify(rows.rows, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
@@ -68,6 +71,7 @@ try {
     if (row.status === 'retired' && action !== 'retire') throw new Error('Retired content is immutable; create a new revision.');
     if (action === 'publish') {
       z.array(source).min(1).parse(row.sources);
+      if (row.image) { const image = QuestionImageSchema.parse(row.image); await readFile(new URL(`../public${image.src}`, import.meta.url)); }
       await client.query("UPDATE quizquiz.question_reports SET status='resolved' WHERE question_id=$1", [target]);
     }
     const status = { publish: 'published', pause: 'paused', retire: 'retired' }[action];

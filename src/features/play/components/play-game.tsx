@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { BusyIndicator } from '@/components/busy-indicator';
 import { Celebration } from '@/components/celebration';
 import { BookmarkButton, StartLearningButton } from './learning-actions';
+import { QuestionIllustration } from './question-illustration';
 import { playSourceLabels } from '../domain/play';
 import type { PlayQuestion, PlaySession, Rating, ReportReason } from '../domain/play';
 
@@ -107,7 +108,7 @@ export function PlayGame({ initialSession }: { initialSession: PlaySession }) {
     </div>
     <p className="eyebrow">오늘도 한 입 더 알아갔어요</p><h1 ref={heading} tabIndex={-1} id="result-title">{total}문제 중 {session.score}문제 정답!</h1>
     <p className="intro-description">{endless ? '누적 점수는 모두 저장됐어요. 최근 20문제의 해설을 다시 볼 수 있어요.' : '해설을 다시 읽거나 문제에 평가를 남겨보세요.'}</p>
-    <ol className="result-list">{session.questions.map((q, i) => <li key={q.position} style={{ '--item-delay': `${i * 45}ms` } as CSSProperties}><button onClick={() => move(i)}><span className={q.result?.correct ? 'correct-text' : 'incorrect-text'}>{q.result?.correct ? '정답' : '오답'}</span><span>{q.question}</span><span className="button-arrow" aria-hidden="true">→</span></button></li>)}</ol>
+    <ol className="result-list">{session.questions.map((q, i) => <li key={q.position} style={{ '--item-delay': `${i * 45}ms` } as CSSProperties}><button onClick={() => move(i)}><span className={q.result?.correct ? 'correct-text' : 'incorrect-text'}>{q.result?.correct ? '정답' : '오답'}</span><span>{q.question}<QuestionIllustration key={q.image?.src} image={q.image} compact /></span><span className="button-arrow" aria-hidden="true">→</span></button></li>)}</ol>
     <div className="play-links">{session.score < total && <StartLearningButton source="wrong">틀린 문제 다시 풀기</StartLearningButton>}<Link href="/play/learning">분야별 내 성적</Link><Link className="primary-button button-link" href="/">다른 문제 풀기</Link><Link href="/play/history">풀이 기록 보기</Link></div>
   </section>;
   const result = question.result;
@@ -122,6 +123,7 @@ export function PlayGame({ initialSession }: { initialSession: PlaySession }) {
     <article key={question.position} className={`question-card play-card ${feedback ? `feedback-${feedback}` : 'play-enter'}`}>
       {feedback === 'correct' && <Celebration />}
       <p className="question-number">문제 {String(question.position + 1).padStart(2, '0')}</p><h3 ref={heading} tabIndex={-1} id="question-title">{question.question}</h3>
+      <QuestionIllustration key={question.image?.src} image={question.image} />
       <fieldset className="answer-options" disabled={busy || !!result}><legend className="visually-hidden">정답 하나 선택</legend>
         {question.options.map((option, i) => <label key={i} className={`answer-option ${result?.correctAnswerIndex === i ? 'answer-correct' : ''} ${result && result.selectedIndex === i && !result.correct ? 'answer-incorrect' : ''}`}>
           <input className="visually-hidden" type="radio" name={`answer-${question.id}`} checked={(result?.selectedIndex ?? selected) === i} onChange={() => setSelected(i)} />

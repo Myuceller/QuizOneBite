@@ -139,7 +139,7 @@ describe("PostgreSQL persistence", () => {
     await command("seed");
     await command("seed");
     const migrations = await pool.query("SELECT count(*)::int AS count FROM quizquiz.schema_migrations");
-    expect(migrations.rows[0].count).toBe(9);
+    expect(migrations.rows[0].count).toBe(10);
     const sample = await repository.findById("98c2d9a0-6990-4d57-8c81-b31704315a48");
     expect(sample?.questions).toHaveLength(3);
     expect(sample?.metadata.verificationStatus).toBe("unreviewed");
@@ -666,5 +666,53 @@ describe('learning collections, statistics and daily quizzes', () => {
     expect(resumed.dailyDay).toBe(yesterday); expect(resumed.answeredCount).toBe(1);
     const participation = (await play.dashboard(owner)).participation;
     expect(participation.map(d => d.day)).toEqual([day, yesterday]);
+  });
+});
+
+describe('image question snapshots', () => {
+  const illustration = { src: `/quiz-images/${'a'.repeat(32)}.svg`, alt: '세 가지 색의 세로 띠가 있는 국기', width: 600, height: 400 };
+  const second = { ...illustration, src: `/quiz-images/${'b'.repeat(32)}.svg` };
+  async function user() {
+    const id = randomUUID();
+    await pool.query('INSERT INTO public.auth_user(id,name,email,"emailVerified","createdAt","updatedAt") VALUES($1,$2,$3,false,now(),now())', [id, 'Image tester', `${id}@example.test`]);return id;
+  }
+  async function fixture(question: string, image: unknown) {
+    const id = randomUUID();
+    await pool.query("INSERT INTO quizquiz.bank_questions(id,category,difficulty,question,options,correct_answer_index,explanation,sources,status,review_note,reviewed_at,image) VALUES($1,'geography','easy',$2,ARRAY['A','B','C','D'],0,'Image test explanation',$3,'published','fixture',now(),$4)", [id, question, JSON.stringify([{title:'Source',url:'https://example.com'}]), image ? JSON.stringify(image) : null]);return id;
+  }
+  it('allows a common prompt with distinct images but rejects duplicate image prompts and unsafe metadata', async () => {
+    const prompt = `Image fixture ${randomUUID()}`;
+    await fixture(prompt, illustration); await fixture(prompt, second);
+    await expect(fixture(prompt, illustration)).rejects.toMatchObject({code:'23505'});
+    await fixture(prompt, null); await expect(fixture(prompt, null)).rejects.toMatchObject({code:'23505'});
+    for (const image of [{...illustration,src:'https://example.com/it.svg'},{...illustration,alt:''},{...illustration,answer:'A'},{...illustration,width:0}]) await expect(fixture(randomUUID(),image)).rejects.toMatchObject({code:'23514'});
+  });
+  it('preserves illustration through grading, reload, collections and review without leaking answers', async () => {
+    const owner = await user(), play = new PostgresPlayRepository(pool), id = await fixture(`Visual fixture ${randomUUID()}`, illustration);
+    await pool.query('INSERT INTO quizquiz.question_bookmarks(user_id,question_id) VALUES($1,$2)',[owner,id]);
+    const s = await play.start(owner,{requestId:randomUUID(),source:'bookmarks',questionId:id,category:'all',difficulty:'all',count:5});
+    expect(s.questions[0].image).toEqual(illustration); expect(s.questions[0].result).toBeUndefined();
+    expect(JSON.stringify(s)).not.toContain('correct_answer_index');expect(JSON.stringify(s)).not.toContain('Image test explanation');
+    await pool.query('UPDATE quizquiz.bank_questions SET image=$2 WHERE id=$1',[id,JSON.stringify(second)]);
+    expect((await play.get(owner,s.id)).questions[0].image).toEqual(illustration);
+    const key=(await pool.query('SELECT correct_answer_index FROM quizquiz.play_items WHERE session_id=$1',[s.id])).rows[0].correct_answer_index;
+    const answered = await play.answer(owner,s.id,0,(key+1)%4);
+    expect(answered.questions[0].image).toEqual(illustration);
+    expect(answered.questions[0].result?.explanation).toBe('Image test explanation');
+    expect((await play.collection(owner,'wrong',1)).items[0].image).toEqual(second);
+    expect((await play.collection(owner,'bookmarks',1)).items[0].image).toEqual(second);
+    const review=await play.start(owner,{requestId:randomUUID(),source:'wrong',questionId:id,category:'all',difficulty:'all',count:5});
+    expect(review.questions[0].image).toEqual(second);expect(review.questions[0].result).toBeUndefined();
+  });
+  it('copies the immutable daily illustration into each player snapshot', async () => {
+    const play=new PostgresPlayRepository(pool);
+    const day=(await pool.query("SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Seoul')::date::text AS day")).rows[0].day;
+    await pool.query('UPDATE quizquiz.daily_items SET image=$2 WHERE day=$1 AND position=0',[day,JSON.stringify(illustration)]);
+    const owner=await user(), session=await play.start(owner,{requestId:randomUUID(),source:'daily',category:'all',difficulty:'all',count:5});
+    expect(session.questions[0].image).toEqual(illustration);
+    await pool.query('UPDATE quizquiz.daily_items SET image=NULL WHERE day=$1 AND position=0',[day]);
+    expect((await play.get(owner,session.id)).questions[0].image).toEqual(illustration);
+    const secondSession=await play.start(await user(),{requestId:randomUUID(),source:'daily',category:'all',difficulty:'all',count:5});
+    expect(secondSession.questions[0].image).toBeNull();
   });
 });
