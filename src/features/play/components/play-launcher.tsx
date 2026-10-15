@@ -71,7 +71,7 @@ export function PlayLauncher({ signedIn }: { signedIn: boolean }) {
           </label>)}
         </div>
       </fieldset>
-      <fieldset className={`${styles.group} ${styles.difficulty}`} disabled={loading}>
+      <fieldset className={styles.group} disabled={loading}>
         <legend className={styles.legend}><span aria-hidden="true">02</span>얼마나 도전해볼까요?</legend>
         <div className={styles.levels}>
           {levels.map(level => <label key={level.value} className={styles.levelCard}>

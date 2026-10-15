@@ -16,6 +16,8 @@
 
 ## 접근성과 구현 위치
 
+홈 출제 설정은 주제·난이도·모드 사이에 데스크톱 40px, 모바일 32px 여백을 둔다. 제목과 선택 카드 사이에는 24px(모바일 20px), 카드 행 사이에는 24px(모바일 22px)를 확보해 그림자·선택 이동·키보드 초점 테두리가 다음 영역과 붙지 않게 한다.
+
 OS의 `prefers-reduced-motion: reduce`에서는 CSS Modules를 포함한 애니메이션·전환을 끈다. 정적인 색·체크·점수·로딩 문구는 남는다. 장식은 `aria-hidden`, 저장 결과는 `role="status"`, 오류는 `role="alert"`를 사용한다. 점수나 축하 모션을 읽기 순서의 필수 단계로 만들지 않는다.
 
 공통 효과는 `src/app/interactions.css`, 주제·난이도와 문제 제출의 효과는 해당 CSS Module, 대기 장식은 `src/components/busy-indicator.tsx`, 색종이는 `src/components/celebration.tsx`에 있다. 실제 선택·요청 상태는 각 기능 컴포넌트에 유지한다. 공통 스타일을 추가할 때 비활성 상태·모션 감소·hover/active 선택자 우선순위를 함께 확인한다.
