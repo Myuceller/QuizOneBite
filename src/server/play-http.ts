@@ -5,7 +5,7 @@ import { PlayError } from '@/features/play/domain/play';
 import { consumePlayQuota } from './db/play-repository';
 
 export const playJson = (value: unknown, status = 200) => Response.json(value, { status, headers: { 'Cache-Control': 'no-store' } });
-export async function playRequest(request: Request, action: 'start' | 'answer' | 'feedback' | 'read', work: (userId: string) => Promise<unknown>) {
+export async function playRequest(request: Request, action: 'start' | 'answer' | 'feedback' | 'next' | 'read', work: (userId: string) => Promise<unknown>) {
   try {
     if (action !== 'read') {
       const expected = process.env.BETTER_AUTH_URL;

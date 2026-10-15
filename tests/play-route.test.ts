@@ -5,7 +5,9 @@ import { POST as answer } from '@/app/api/play/[id]/answer/route';
 import { POST as rate } from '@/app/api/questions/[id]/rating/route';
 import { POST as report } from '@/app/api/questions/[id]/report/route';
 import { GET } from '@/app/api/play/[id]/route';
-const { session, quota, repo } = vi.hoisted(() => ({ session: vi.fn(), quota: vi.fn(), repo: { start: vi.fn(), answer: vi.fn(), rate: vi.fn(), report: vi.fn(), get: vi.fn() } }));
+import { POST as next } from '@/app/api/play/[id]/next/route';
+import { POST as finish } from '@/app/api/play/[id]/finish/route';
+const { session, quota, repo } = vi.hoisted(() => ({ session: vi.fn(), quota: vi.fn(), repo: { start: vi.fn(), answer: vi.fn(), next: vi.fn(), finish: vi.fn(), rate: vi.fn(), report: vi.fn(), get: vi.fn() } }));
 vi.mock('@/server/auth', () => ({ getAuth: () => ({ api: { getSession: session } }) }));
 vi.mock('@/server/db/play-repository', () => ({ getPlayRepository: () => repo, consumePlayQuota: quota }));
 const id = randomUUID();
@@ -16,7 +18,7 @@ afterEach(() => vi.unstubAllEnvs());
 describe('play API boundary', () => {
   it('requires authentication for every endpoint', async () => {
     session.mockResolvedValue(null);
-    for (const response of [await POST(request({})), await answer(request({}),params), await rate(request({}),params), await report(request({}),params), await GET(new Request('https://quiz.example/api/play/'+id),params)]) expect(response.status).toBe(401);
+    for (const response of [await POST(request({})), await answer(request({}),params), await next(request({}),params), await finish(request({}),params), await rate(request({}),params), await report(request({}),params), await GET(new Request('https://quiz.example/api/play/'+id),params)]) expect(response.status).toBe(401);
     expect(repo.start).not.toHaveBeenCalled();
   });
   it('rejects cross-site and originless mutations before accessing storage', async () => {
@@ -44,5 +46,21 @@ describe('play API boundary', () => {
     repo.start.mockRejectedValueOnce(new Error('postgresql://secret'));
     const response = await POST(request({ requestId: id }));
     expect(response.status).toBe(503); expect(await response.text()).not.toContain('secret');
+  });
+  it('validates endless requests and keeps owner, sequence and grading on the server', async () => {
+    expect((await POST(request({ requestId: id, mode: 'endless' }))).status).toBe(200);
+    expect(repo.start).toHaveBeenCalledWith('owner', expect.objectContaining({ mode: 'endless' }));
+    expect((await next(request({ position: 25 }),params)).status).toBe(200);
+    expect(repo.next).toHaveBeenCalledWith('owner', id, 25);
+    expect((await answer(request({ position: 25, answerIndex: 1 }),params)).status).toBe(200);
+    expect(repo.answer).toHaveBeenCalledWith('owner', id, 25, 1);
+    expect((await finish(request({}),params)).status).toBe(200);
+    expect(repo.finish).toHaveBeenCalledWith('owner', id);
+    for (const position of [-1, 1.5, 2147483648]) expect((await next(request({ position }),params)).status).toBe(400);
+    expect((await finish(request({ score: 100 }),params)).status).toBe(400);
+    expect((await next(request({ position: 0 },'https://evil.example'),params)).status).toBe(403);
+    expect((await finish(request({},'https://evil.example'),params)).status).toBe(403);
+    quota.mockResolvedValue(false);
+    expect((await next(request({ position: 0 }),params)).status).toBe(429);
   });
 });

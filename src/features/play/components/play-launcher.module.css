@@ -97,3 +97,6 @@
   .topicCard:has(input:checked), .levelCard:has(input:checked),
   .topicCard:hover:has(input:enabled):not(:has(input:checked)):not(:active), .levelCard:hover:has(input:enabled):not(:has(input:checked)):not(:active) { transform: none; }
 }
+
+.modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 480px) { .modes { grid-template-columns: 1fr; } }

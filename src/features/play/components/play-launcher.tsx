@@ -38,6 +38,7 @@ export function PlayLauncher({ signedIn }: { signedIn: boolean }) {
   const router = useRouter();
   const [category, setCategory] = useState<Topic>('all');
   const [difficulty, setDifficulty] = useState<StartPlay['difficulty']>('all');
+  const [mode, setMode] = useState<'standard' | 'endless'>('standard');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const pending = useRef<{ key: string; id: string } | null>(null);
@@ -46,17 +47,17 @@ export function PlayLauncher({ signedIn }: { signedIn: boolean }) {
     event.preventDefault();
     if (starting.current || !signedIn) return;
     starting.current = true; setLoading(true); setError('');
-    const key = `${category}:${difficulty}`;
+    const key = `${category}:${difficulty}:${mode}`;
     if (pending.current?.key !== key) pending.current = { key, id: crypto.randomUUID() };
     try {
-      const response = await fetch('/api/play', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ category, difficulty, count: 5, requestId: pending.current.id }) });
+      const response = await fetch('/api/play', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ category, difficulty, mode, count: 5, requestId: pending.current.id }) });
       const data = await response.json() as { session?: PlaySession; error?: { message: string } };
       if (!response.ok || !data.session) throw new Error(data.error?.message ?? '문제를 불러오지 못했어요.');
       router.push(`/play/${data.session.id}`);
     } catch (caught) { setError(caught instanceof Error ? caught.message : '연결을 확인해 주세요.'); starting.current = false; setLoading(false); }
   }
   return <section aria-labelledby="play-title">
-    <div className="section-heading"><h2 id="play-title">오늘의 상식 한 입</h2><span className={styles.roundBadge}>최대 5문제 · 네 가지 보기</span></div>
+    <div className="section-heading"><h2 id="play-title">오늘의 상식 한 입</h2><span className={styles.roundBadge}>{mode === 'endless' ? '무한모드 · 원하는 만큼' : '최대 5문제 · 네 가지 보기'}</span></div>
     <form className={styles.panel} onSubmit={start} data-topic={category}>
       <fieldset className={styles.group} disabled={loading}>
         <legend className={styles.legend}><span aria-hidden="true">01</span>어떤 주제가 끌리나요?</legend>
@@ -83,16 +84,26 @@ export function PlayLauncher({ signedIn }: { signedIn: boolean }) {
           </label>)}
         </div>
       </fieldset>
+      <fieldset className={styles.group} disabled={loading}>
+        <legend className={styles.legend}><span aria-hidden="true">03</span>어떻게 풀까요?</legend>
+        <div className={styles.modes}>
+          {([{ value: 'standard', label: '5문제 한 입', hint: '가볍게 풀고 결과 보기' }, { value: 'endless', label: '무한모드', hint: '한 문제씩 계속, 마무리는 내 마음대로' }] as const).map(item => <label key={item.value} className={styles.levelCard}>
+            <input className="visually-hidden" type="radio" name="mode" value={item.value} checked={mode === item.value} onChange={() => setMode(item.value)} />
+            <span className={styles.levelTop}><strong>{item.label}</strong><span className={styles.levelCheck} aria-hidden="true">✓</span></span>
+            <span className={styles.cardHint}>{item.hint}</span>
+          </label>)}
+        </div>
+      </fieldset>
       <div className={styles.startRow}>
         <div className={styles.selectionTicket}>
           <span key={category} className={`${styles.ticketIcon} ${styles[category]}`}><TopicIcon topic={category} /></span>
           <div className={styles.selection}><span>오늘의 한 입</span><strong key={`${category}:${difficulty}`} className={styles.selectionValue}>{topics.find(topic => topic.value === category)?.label} <span aria-hidden="true">·</span> {difficulty === 'all' ? '모든 난이도' : difficultyLabels[difficulty]}</strong></div>
         </div>
-        {signedIn ? <button className={`primary-button ${styles.startButton}`} type="submit" disabled={loading} aria-busy={loading}>{loading ? <><BusyIndicator />문제 고르는 중…</> : <>퀴즈 시작하기<span className="button-arrow" aria-hidden="true">→</span></>}</button> : <Link href="/login" className={`primary-button button-link ${styles.startButton}`}>로그인하고 풀기<span className="button-arrow" aria-hidden="true">→</span></Link>}
+        {signedIn ? <button className={`primary-button ${styles.startButton}`} type="submit" disabled={loading} aria-busy={loading}>{loading ? <><BusyIndicator />문제 고르는 중…</> : <>{mode === 'endless' ? '무한모드 시작하기' : '퀴즈 시작하기'}<span className="button-arrow" aria-hidden="true">→</span></>}</button> : <Link href="/login" className={`primary-button button-link ${styles.startButton}`}>로그인하고 풀기<span className="button-arrow" aria-hidden="true">→</span></Link>}
       </div>
       <span className="visually-hidden" role="status">{loading ? '문제를 고르고 있어요. 잠시만 기다려 주세요.' : ''}</span>
       {error && <p className="error-message" role="alert">{error}</p>}
-      <p className={styles.note}>처음 만나는 문제부터 골라드려요. 조건에 맞는 문제가 적으면 가능한 수만 출제하고, 모두 풀었다면 복습 문제가 섞여요.</p>
+      <p className={styles.note}>{mode === 'endless' ? '한 문제씩 이어져요. 가능한 문제를 모두 만나면 복습으로 계속하고, 언제든 여기까지 마칠 수 있어요.' : '처음 만나는 문제부터 골라드려요. 조건에 맞는 문제가 적으면 가능한 수만 출제하고, 모두 풀었다면 복습 문제가 섞여요.'}</p>
     </form>
     <div className="play-links"><Link href="/play/history">내 풀이 기록 →</Link><Link href="/preview">기존 샘플 미리보기 →</Link></div>
   </section>;

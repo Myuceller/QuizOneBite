@@ -6,8 +6,12 @@ export const StartPlaySchema = z.object({
   category: z.enum(['all', ...QUIZ_CATEGORIES]).default('all'),
   difficulty: z.enum(['all', ...QUIZ_DIFFICULTIES]).default('all'),
   count: z.number().int().min(1).max(10).default(5),
+  mode: z.enum(['standard', 'endless']).optional(),
 }).strict();
-export const AnswerSchema = z.object({ position: z.number().int().min(0).max(9), answerIndex: z.number().int().min(0).max(3) }).strict();
+const PositionSchema = z.number().int().min(0).max(2147483646);
+export const AnswerSchema = z.object({ position: PositionSchema, answerIndex: z.number().int().min(0).max(3) }).strict();
+export const NextQuestionSchema = z.object({ position: PositionSchema }).strict();
+export const FinishPlaySchema = z.object({}).strict();
 export const RatingSchema = z.discriminatedUnion('value', [
   z.object({ value: z.literal(1), reason: z.null().optional() }).strict(),
   z.object({ value: z.literal(-1), reason: z.enum(['obvious', 'ambiguous', 'options']) }).strict(),
@@ -22,8 +26,8 @@ export type PlayQuestion = {
   rating: Rating | null; reported: boolean;
   result?: { selectedIndex: number; correctAnswerIndex: number; correct: boolean; explanation: string; sources: Source[] };
 };
-export type PlaySession = { id: string; category: string; difficulty: string; completed: boolean; score: number; questions: PlayQuestion[] };
-export type PlayHistory = { id: string; createdAt: string; count: number; answered: number; score: number };
+export type PlaySession = { id: string; category: string; difficulty: string; completed: boolean; score: number; questions: PlayQuestion[]; mode: 'standard' | 'endless'; answeredCount: number };
+export type PlayHistory = { id: string; createdAt: string; count: number; answered: number; score: number; mode: 'standard' | 'endless'; completed: boolean };
 export class PlayError extends Error {
   constructor(public code: string, message: string, public status = 400) { super(message); }
 }

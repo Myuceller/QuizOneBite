@@ -249,3 +249,6 @@ button:disabled { cursor: wait; opacity: .65; }
   .primary-button:active:not(:disabled), .secondary-button:active:not(:disabled), .result-list button:active:not(:disabled),
   .answer-option:active:has(input:enabled) { transform: none; }
 }
+
+.endless-status { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+.endless-status p { margin: 0; }

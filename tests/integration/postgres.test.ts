@@ -139,7 +139,7 @@ describe("PostgreSQL persistence", () => {
     await command("seed");
     await command("seed");
     const migrations = await pool.query("SELECT count(*)::int AS count FROM quizquiz.schema_migrations");
-    expect(migrations.rows[0].count).toBe(7);
+    expect(migrations.rows[0].count).toBe(8);
     const sample = await repository.findById("98c2d9a0-6990-4d57-8c81-b31704315a48");
     expect(sample?.questions).toHaveLength(3);
     expect(sample?.metadata.verificationStatus).toBe("unreviewed");
@@ -445,5 +445,78 @@ describe('community submission review', () => {
     const duplicate=input();const a=await repo.submit(await user(),duplicate);const b=await repo.submit(await user(),{...duplicate,requestId:randomUUID()});
     await repo.review(a.id,'approve','test','검수 완료');await expect(repo.review(b.id,'approve','test','검수 완료')).rejects.toMatchObject({code:'23505'});
     expect((await pool.query('SELECT status FROM quizquiz.question_submissions WHERE id=$1',[b.id])).rows[0].status).toBe('pending');
+  });
+});
+
+describe('endless play', () => {
+  const play = () => new PostgresPlayRepository(pool);
+  const input = () => ({ requestId: randomUUID(), category: 'history' as const, difficulty: 'hard' as const, count: 5, mode: 'endless' as const });
+  async function user() {
+    const id=randomUUID();
+    await pool.query('INSERT INTO public.auth_user(id,name,email,"emailVerified","createdAt","updatedAt") VALUES($1,$2,$3,false,now(),now())',[id,'Endless tester',`${id}@example.test`]);
+    return id;
+  }
+  beforeAll(async () => {
+    for(let i=0;i<2;i++) await pool.query("INSERT INTO quizquiz.bank_questions(id,category,difficulty,question,options,correct_answer_index,explanation,sources,status,review_note,reviewed_at) VALUES($1,'history','hard',$2,ARRAY['a','b','c','d'],0,'Test explanation',$3,'published','fixture',now())",[randomUUID(),`Endless fixture ${randomUUID()}`,JSON.stringify([{title:'Test source',url:'https://example.com'}])]);
+  });
+  it('requires an answer, appends only once under concurrency and resumes the pending question', async () => {
+    const owner=await user(), repo=play(), request=input();
+    const s=await repo.start(owner,request);
+    expect(s.mode).toBe('endless');expect(s.questions).toHaveLength(1);
+    await expect(repo.next(owner,s.id,0)).rejects.toMatchObject({code:'ANSWER_REQUIRED'});
+    await expect(repo.next(await user(),s.id,0)).rejects.toMatchObject({status:404});
+    await expect(repo.finish(await user(),s.id)).rejects.toMatchObject({status:404});
+    const answered=await repo.answer(owner,s.id,0,0);
+    expect(answered.completed).toBe(false);expect(answered.answeredCount).toBe(1);
+    const [a,b]=await Promise.all([repo.next(owner,s.id,0),repo.next(owner,s.id,0)]);
+    expect(a).toEqual(b);expect(a.questions).toHaveLength(2);
+    expect(a.questions[1].result).toBeUndefined();expect(a.questions[1]).not.toHaveProperty('explanation');
+    expect(a.questions[1].id).not.toBe(a.questions[0].id);
+    expect(await repo.get(owner,s.id)).toEqual(a);
+    expect(await repo.start(owner,request)).toEqual(a);
+    const finished=await repo.finish(owner,s.id);
+    expect(finished.completed).toBe(true);expect(finished.answeredCount).toBe(1);expect(finished.questions).toHaveLength(1);
+    expect(await repo.finish(owner,s.id)).toEqual(finished);
+    expect(await repo.next(owner,s.id,1)).toEqual(finished);
+    await expect(repo.answer(owner,s.id,1,0)).rejects.toMatchObject({code:'FINISHED'});
+    expect((await repo.history(owner))[0]).toMatchObject({mode:'endless',completed:true,answered:1});
+  });
+  it('continues beyond 20 questions, exhausts each cycle and preserves cumulative grading in bounded responses', async () => {
+    const owner=await user(), repo=play();let s=await repo.start(owner,input());
+    const available=Number((await pool.query("SELECT count(*) FROM quizquiz.bank_questions WHERE category='history' AND difficulty='hard' AND status='published'")).rows[0].count);
+    const cycle=new Set<string>();let score=0;
+    for(let position=0;position<24;position++){
+      const q=s.questions.at(-1)!;expect(q.position).toBe(position);expect(q.result).toBeUndefined();
+      if(position<available){expect(cycle.has(q.id)).toBe(false);cycle.add(q.id);}
+      if(position>=available)expect(q.isReview).toBe(true);
+      const key=(await pool.query('SELECT correct_answer_index FROM quizquiz.play_items WHERE session_id=$1 AND position=$2',[s.id,position])).rows[0].correct_answer_index;
+      const correct=position%2===0;if(correct)score++;
+      s=await repo.answer(owner,s.id,position,correct?key:(key+1)%4);
+      expect(s.score).toBe(score);expect(s.answeredCount).toBe(position+1);expect(s.completed).toBe(false);
+      expect(s.questions.at(-1)?.result?.correct).toBe(correct);expect(s.questions.length).toBeLessThanOrEqual(20);
+      if(position<23)s=await repo.next(owner,s.id,position);
+    }
+    expect(cycle.size).toBe(available);
+    expect(await repo.get(owner,s.id)).toEqual(s);
+    s=await repo.finish(owner,s.id);expect(s.score).toBe(12);expect(s.answeredCount).toBe(24);expect(s.questions).toHaveLength(20);expect(s.questions[0].position).toBe(4);
+    expect((await repo.history(owner))[0]).toMatchObject({count:24,answered:24,score:12,completed:true});
+  });
+  it('keeps progress and permits finishing if moderation removes every eligible next question', async () => {
+    const owner=await user(), repo=play();const s=await repo.start(owner,input());
+    await repo.answer(owner,s.id,0,0);
+    const ids=(await pool.query("SELECT id FROM quizquiz.bank_questions WHERE category='history' AND difficulty='hard' AND status='published'")).rows.map(q=>q.id);
+    try {
+      await pool.query("UPDATE quizquiz.bank_questions SET status='paused' WHERE id=ANY($1::uuid[])",[ids]);
+      await expect(repo.next(owner,s.id,0)).rejects.toMatchObject({code:'EMPTY_BANK'});
+      expect((await repo.get(owner,s.id)).answeredCount).toBe(1);
+      expect(await repo.finish(owner,s.id)).toMatchObject({completed:true,answeredCount:1});
+    } finally { await pool.query("UPDATE quizquiz.bank_questions SET status='published' WHERE id=ANY($1::uuid[])",[ids]); }
+  });
+  it('allows ending before answering and rejects endless actions on standard sessions', async () => {
+    const owner=await user(), repo=play();const s=await repo.start(owner,input());
+    expect(await repo.finish(owner,s.id)).toMatchObject({completed:true,answeredCount:0,score:0,questions:[]});
+    const standard=await repo.start(owner,{...input(),mode:'standard'});
+    await expect(repo.next(owner,standard.id,0)).rejects.toMatchObject({code:'INVALID_MODE'});
+    await expect(repo.finish(owner,standard.id)).rejects.toMatchObject({code:'INVALID_MODE'});
   });
 });
