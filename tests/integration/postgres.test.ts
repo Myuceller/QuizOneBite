@@ -139,7 +139,7 @@ describe("PostgreSQL persistence", () => {
     await command("seed");
     await command("seed");
     const migrations = await pool.query("SELECT count(*)::int AS count FROM quizquiz.schema_migrations");
-    expect(migrations.rows[0].count).toBe(8);
+    expect(migrations.rows[0].count).toBe(9);
     const sample = await repository.findById("98c2d9a0-6990-4d57-8c81-b31704315a48");
     expect(sample?.questions).toHaveLength(3);
     expect(sample?.metadata.verificationStatus).toBe("unreviewed");
@@ -518,5 +518,153 @@ describe('endless play', () => {
     const standard=await repo.start(owner,{...input(),mode:'standard'});
     await expect(repo.next(owner,standard.id,0)).rejects.toMatchObject({code:'INVALID_MODE'});
     await expect(repo.finish(owner,standard.id)).rejects.toMatchObject({code:'INVALID_MODE'});
+  });
+});
+
+describe('learning collections, statistics and daily quizzes', () => {
+  const repo = () => new PostgresPlayRepository(pool);
+  const input = () => ({ requestId: randomUUID(), category: 'all' as const, difficulty: 'all' as const, count: 5 });
+  async function user() {
+    const id = randomUUID();
+    await pool.query('INSERT INTO public.auth_user(id,name,email,"emailVerified","createdAt","updatedAt") VALUES($1,$2,$3,false,now(),now())', [id, 'Learning tester', `${id}@example.test`]);
+    return id;
+  }
+  async function answer(owner: string, id: string, position: number, correct: boolean) {
+    const q = (await pool.query('SELECT correct_answer_index FROM quizquiz.play_items WHERE session_id=$1 AND position=$2', [id, position])).rows[0];
+    return repo().answer(owner, id, position, correct ? q.correct_answer_index : (q.correct_answer_index + 1) % 4);
+  }
+  it('collects only the owner’s latest wrong answers and removes a question after successful retry', async () => {
+    const owner = await user(), other = await user(), play = repo();
+    const original = await play.start(owner, input());
+    const q = original.questions[0];
+    await answer(owner, original.id, 0, false);
+    const collection = await play.collection(owner, 'wrong', 1);
+    expect(collection.total).toBe(1); expect(collection.items[0].id).toBe(q.id);
+    expect(collection.items[0]).not.toHaveProperty('correct_answer_index');
+    expect(collection.items[0]).not.toHaveProperty('explanation');
+    expect((await play.collection(other, 'wrong', 1)).total).toBe(0);
+    await expect(play.start(other, { ...input(), source: 'wrong', questionId: q.id })).rejects.toMatchObject({ code: 'EMPTY_BANK' });
+    const retry = await play.start(owner, { ...input(), source: 'wrong', questionId: q.id });
+    expect(retry.questions).toHaveLength(1); expect(retry.questions[0].result).toBeUndefined();
+    expect(retry.source).toBe('wrong');
+    expect((await play.dashboard(owner)).wrongCount).toBe(1);
+    await answer(owner, retry.id, 0, true);
+    expect((await play.collection(owner, 'wrong', 1)).total).toBe(0);
+    expect((await play.dashboard(owner)).wrongCount).toBe(0);
+    // Historical grading remains unchanged after the successful retry.
+    expect((await play.get(owner, original.id)).questions[0].result?.correct).toBe(false);
+  });
+  it('deduplicates wrong questions and counts repeated submissions only once in statistics', async () => {
+    const owner = await user(), play = repo();
+    const original = await play.start(owner, input());
+    await answer(owner, original.id, 0, false);
+    const q = original.questions[0];
+    const retry = await play.start(owner, { ...input(), source: 'wrong', questionId: q.id });
+    await answer(owner, retry.id, 0, false);
+    await answer(owner, retry.id, 0, false);
+    expect((await play.collection(owner, 'wrong', 1)).total).toBe(1);
+    const stats = await play.dashboard(owner);
+    expect(stats.categories.reduce((sum, c) => sum + c.answered, 0)).toBe(2);
+    expect(stats.categories.reduce((sum, c) => sum + c.correct, 0)).toBe(0);
+    expect((await play.dashboard(await user())).categories).toEqual([]);
+  });
+  it('persists bookmarks after submission, isolates owners and safely repeats save/remove requests', async () => {
+    const owner = await user(), other = await user(), play = repo();
+    const s = await play.start(owner, input()), q = s.questions[0];
+    await expect(play.bookmark(owner, q.id, true)).rejects.toMatchObject({ status: 403 });
+    await answer(owner, s.id, 0, true);
+    await Promise.all([play.bookmark(owner, q.id, true), play.bookmark(owner, q.id, true)]);
+    expect((await play.get(owner, s.id)).questions[0].bookmarked).toBe(true);
+    expect((await play.collection(owner, 'bookmarks', 1)).total).toBe(1);
+    expect((await play.dashboard(owner)).bookmarkCount).toBe(1);
+    await expect(play.bookmark(other, q.id, true)).rejects.toMatchObject({ status: 403 });
+    await play.bookmark(other, q.id, false);
+    expect((await play.collection(owner, 'bookmarks', 1)).total).toBe(1);
+    await expect(play.start(other, { ...input(), source: 'bookmarks', questionId: q.id })).rejects.toMatchObject({ code: 'EMPTY_BANK' });
+    const retry = await play.start(owner, { ...input(), source: 'bookmarks', questionId: q.id });
+    expect(retry.source).toBe('bookmarks'); expect(retry.questions[0].id).toBe(q.id);
+    expect(retry.questions[0].result).toBeUndefined();
+    await play.bookmark(owner, q.id, false); await play.bookmark(owner, q.id, false);
+    expect((await play.collection(owner, 'bookmarks', 1)).total).toBe(0);
+    expect((await play.get(owner, s.id)).questions[0].bookmarked).toBe(false);
+  });
+  it('preserves historical category stats and skips paused questions without deleting saved collections', async () => {
+    const owner = await user(), play = repo(), s = await play.start(owner, input());
+    await answer(owner, s.id, 0, false); const q = s.questions[0];
+    await play.bookmark(owner, q.id, true);
+    const category = (await pool.query('SELECT category FROM quizquiz.bank_questions WHERE id=$1', [q.id])).rows[0].category;
+    try {
+      await pool.query("UPDATE quizquiz.bank_questions SET status='paused', category=$2 WHERE id=$1", [q.id, category === 'science' ? 'history' : 'science']);
+      expect((await play.collection(owner, 'wrong', 1)).items[0].available).toBe(false);
+      expect((await play.collection(owner, 'bookmarks', 1)).total).toBe(1);
+      const dashboard = await play.dashboard(owner);
+      expect(dashboard.wrongCount).toBe(0); expect(dashboard.bookmarkCount).toBe(0);
+      expect(dashboard.categories).toEqual([{ category, answered: 1, correct: 0 }]);
+      for (const source of ['wrong', 'bookmarks'] as const) await expect(play.start(owner, { ...input(), source, questionId: q.id })).rejects.toMatchObject({ code: 'EMPTY_BANK' });
+    } finally { await pool.query("UPDATE quizquiz.bank_questions SET status='published', category=$2 WHERE id=$1", [q.id, category]); }
+  });
+  it('creates a shared daily set once, resumes one session per account and hides unsubmitted answers', async () => {
+    const owner = await user(), other = await user(), play = repo();
+    const [a, b, duplicate] = await Promise.all([
+      play.start(owner, { ...input(), source: 'daily' }),
+      play.start(other, { ...input(), source: 'daily' }),
+      play.start(owner, { ...input(), source: 'daily' }),
+    ]);
+    expect(a.id).toBe(duplicate.id); expect(a.id).not.toBe(b.id);
+    expect(a.questions.map(q => q.id)).toEqual(b.questions.map(q => q.id));
+    expect(new Set(a.questions.map(q => q.id)).size).toBe(5);
+    expect(a.source).toBe('daily'); expect(a.questions.every(q => !q.result)).toBe(true);
+    expect(JSON.stringify(a)).not.toContain('correctAnswerIndex');
+    const day = (await pool.query("SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Seoul')::date::text AS day")).rows[0].day;
+    expect(a.dailyDay).toBe(day);
+    for (let i = 0; i < 5; i++) await answer(owner, a.id, i, i < 3);
+    const completed = await play.start(owner, { ...input(), source: 'daily' });
+    expect(completed).toMatchObject({ id: a.id, completed: true, score: 3 });
+    expect((await play.dashboard(owner)).daily).toMatchObject({ day, completed: true, score: 3, answered: 5 });
+    expect((await play.dashboard(owner)).participation).toEqual([{ day, completed: true, score: 3 }]);
+    expect((await play.dashboard(other)).daily.completed).toBe(false);
+    expect((await play.history(owner))[0]).toMatchObject({ source: 'daily', dailyDay: day });
+  });
+  it('retains daily snapshots across bank edits and blocks a new daily start if moderation pauses an item', async () => {
+    const owner = await user(), play = repo(), a = await play.start(owner, { ...input(), source: 'daily' });
+    const q = a.questions[0]; const original = (await pool.query('SELECT question FROM quizquiz.bank_questions WHERE id=$1', [q.id])).rows[0].question;
+    try {
+      await pool.query('UPDATE quizquiz.bank_questions SET question=$2 WHERE id=$1', [q.id, `Edited fixture ${randomUUID()}`]);
+      const b = await play.start(await user(), { ...input(), source: 'daily' });
+      expect(b.questions[0].question).toBe(q.question);
+      await pool.query("UPDATE quizquiz.bank_questions SET status='paused' WHERE id=$1", [q.id]);
+      await expect(play.start(await user(), { ...input(), source: 'daily' })).rejects.toMatchObject({ code: 'EMPTY_DAILY' });
+      expect((await play.start(owner, { ...input(), source: 'daily' })).id).toBe(a.id);
+    } finally { await pool.query("UPDATE quizquiz.bank_questions SET question=$2, status='published' WHERE id=$1", [q.id, original]); }
+  });
+  it('paginates saved lists with no duplicate rows or answer leakage', async () => {
+    const owner = await user(), play = repo();
+    for (let i = 0; i < 23; i++) {
+      const id = randomUUID();
+      await pool.query("INSERT INTO quizquiz.bank_questions(id,category,difficulty,question,options,correct_answer_index,explanation,sources,status,review_note,reviewed_at) VALUES($1,'science','easy',$2,ARRAY['a','b','c','d'],0,'Private explanation',$3,'published','fixture',now())", [id, `Collection fixture ${id}`, JSON.stringify([{ title: 'Source', url: 'https://example.com' }])]);
+      // Direct fixture insertion only: the public save path requires an answer.
+      await pool.query('INSERT INTO quizquiz.question_bookmarks(user_id,question_id) VALUES($1,$2)', [owner, id]);
+    }
+    const a = await play.collection(owner, 'bookmarks', 1), b = await play.collection(owner, 'bookmarks', 2);
+    expect(a.total).toBe(23); expect(a.items).toHaveLength(20); expect(b.items).toHaveLength(3);
+    expect(new Set([...a.items, ...b.items].map(q => q.id)).size).toBe(23);
+    expect(JSON.stringify(a)).not.toContain('Private explanation');
+  });
+  it('keeps previous-day progress while allowing a new daily session on a new KST date', async () => {
+    const owner = await user(), play = repo();
+    const prior = await play.start(owner, { ...input(), source: 'daily' });
+    await answer(owner, prior.id, 0, true);
+    const day = prior.dailyDay!;
+    const yesterday = (await pool.query('SELECT ($1::date - 1)::text AS day', [day])).rows[0].day;
+    await pool.query('INSERT INTO quizquiz.daily_sets(day) VALUES($1)', [yesterday]);
+    await pool.query('UPDATE quizquiz.daily_items SET day=$2 WHERE day=$1', [day, yesterday]);
+    await pool.query('UPDATE quizquiz.play_sessions SET daily_day=$2 WHERE daily_day=$1', [day, yesterday]);
+    await pool.query('DELETE FROM quizquiz.daily_sets WHERE day=$1', [day]);
+    const today = await play.start(owner, { ...input(), source: 'daily' });
+    expect(today.id).not.toBe(prior.id); expect(today.dailyDay).toBe(day);
+    const resumed = await play.get(owner, prior.id);
+    expect(resumed.dailyDay).toBe(yesterday); expect(resumed.answeredCount).toBe(1);
+    const participation = (await play.dashboard(owner)).participation;
+    expect(participation.map(d => d.day)).toEqual([day, yesterday]);
   });
 });

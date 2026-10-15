@@ -5,19 +5,20 @@ import type { PlayRepository } from '@/features/play/ports/play-repository';
 import { PlayError, type PlaySession, type PlayHistory, type Rating, type ReportReason, type Source, type StartPlay } from '@/features/play/domain/play';
 import { selectQuestions, shuffleOptions, type Candidate } from '@/features/play/domain/selection';
 import { getDatabasePool } from './pool';
+import { latestAnswers, collectionMembership, readCollection, readDashboard } from './learning-queries';
 
 type BankRow = Candidate & { question: string; options: string[]; correct_answer_index: number; explanation: string; sources: Source[] };
 type ItemRow = {
   question_id: string; position: number; question: string; options: string[]; is_review: boolean;
   selected_index: number | null; correct_answer_index: number; explanation: string; sources: Source[];
-  rating_value: number | null; rating_reason: 'obvious' | 'ambiguous' | 'options' | null; reported: boolean;
+  rating_value: number | null; rating_reason: 'obvious' | 'ambiguous' | 'options' | null; reported: boolean; bookmarked: boolean;
 };
 type Queryable = Pick<Pool, 'query'>;
 const random = () => randomInt(0, 1_000_000) / 1_000_000;
 const missing = () => new PlayError('NOT_FOUND', '문제 기록을 찾을 수 없어요.', 404);
 
 async function readSession(db: Queryable, userId: string, id: string): Promise<PlaySession> {
-  const session = await db.query(`SELECT s.id, s.category, s.difficulty, s.completed_at, s.mode,
+  const session = await db.query(`SELECT s.id, s.category, s.difficulty, s.completed_at, s.mode, s.source, s.daily_day::text,
     (SELECT count(*)::int FROM quizquiz.play_items WHERE session_id=s.id AND selected_index IS NOT NULL) AS answered,
     (SELECT count(*)::int FROM quizquiz.play_items WHERE session_id=s.id AND selected_index=correct_answer_index) AS score
     FROM quizquiz.play_sessions s WHERE s.id=$1 AND s.user_id=$2`, [id, userId]);
@@ -26,6 +27,7 @@ async function readSession(db: Queryable, userId: string, id: string): Promise<P
   const endless = state.mode === 'endless';
   const items = await db.query<ItemRow>(`
     SELECT i.*, r.value AS rating_value, r.reason AS rating_reason,
+      EXISTS(SELECT 1 FROM quizquiz.question_bookmarks m WHERE m.question_id=i.question_id AND m.user_id=$2) AS bookmarked,
       EXISTS(SELECT 1 FROM quizquiz.question_reports p WHERE p.question_id=i.question_id AND p.user_id=$2) AS reported
     FROM quizquiz.play_items i
     LEFT JOIN quizquiz.question_ratings r ON r.question_id=i.question_id AND r.user_id=$2
@@ -35,11 +37,11 @@ async function readSession(db: Queryable, userId: string, id: string): Promise<P
   return {
     id, category: session.rows[0].category, difficulty: session.rows[0].difficulty,
     completed: !!state.completed_at, mode: state.mode, answeredCount: state.answered,
-    score: state.score,
+    score: state.score, source: state.source, dailyDay: state.daily_day,
     questions: items.rows.reverse().map(i => ({
       id: i.question_id, position: i.position, question: i.question, options: i.options, isReview: i.is_review,
       rating: i.rating_value === 1 ? { value: 1 } : i.rating_value === -1 ? { value: -1, reason: i.rating_reason! } : null,
-      reported: i.reported,
+      reported: i.reported, bookmarked: i.bookmarked,
       // Explicit projection: never return the answer or evidence before submission.
       ...(i.selected_index === null ? {} : { result: {
         selectedIndex: i.selected_index, correctAnswerIndex: i.correct_answer_index,
@@ -67,8 +69,8 @@ async function candidates(db: Queryable, userId: string, category: string, diffi
 
 async function appendQuestion(db: Queryable, id: string, position: number, q: BankRow) {
   const shuffled = shuffleOptions(q.options, q.correct_answer_index, random);
-  await db.query(`INSERT INTO quizquiz.play_items(session_id,position,question_id,question,options,correct_answer_index,explanation,sources,is_review)
-    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [id, position, q.id, q.question, shuffled.options, shuffled.correctAnswerIndex, q.explanation, JSON.stringify(q.sources), !!q.lastSeen]);
+  await db.query(`INSERT INTO quizquiz.play_items(session_id,position,question_id,question,options,correct_answer_index,explanation,sources,is_review,category)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, [id, position, q.id, q.question, shuffled.options, shuffled.correctAnswerIndex, q.explanation, JSON.stringify(q.sources), !!q.lastSeen, q.category]);
 }
 
 export class PostgresPlayRepository implements PlayRepository {
@@ -88,14 +90,60 @@ export class PostgresPlayRepository implements PlayRepository {
         if (existing.rows[0].user_id !== userId) throw missing();
         return readSession(client, userId, input.requestId);
       }
+      const source = input.source ?? 'standard';
+      if (source !== 'standard' && input.mode === 'endless') throw new PlayError('INVALID_MODE', '복습과 오늘의 문제는 일반 모드로 풀어요.');
+      if (source === 'daily') return this.startDaily(client, userId, input.requestId);
       const bank = await candidates(client, userId, input.category, input.difficulty);
-      const picked = selectQuestions(bank.rows, input.mode === 'endless' ? 1 : input.count, random);
-      if (!picked.length) throw new PlayError('EMPTY_BANK', '이 조건의 문제가 아직 없어요. 주제나 난이도를 전체로 바꿔보세요.', 409);
-      await client.query('INSERT INTO quizquiz.play_sessions(id,user_id,category,difficulty,mode) VALUES($1,$2,$3,$4,$5)', [input.requestId, userId, input.category, input.difficulty, input.mode ?? 'standard']);
+      let eligible = bank.rows;
+      if (source === 'wrong' || source === 'bookmarks') {
+        const ids = await client.query(`WITH latest AS (${latestAnswers}) SELECT b.id FROM quizquiz.bank_questions b WHERE ${collectionMembership}`, [userId, source]);
+        const allowed = new Set(ids.rows.map(r => r.id));
+        eligible = eligible.filter(q => allowed.has(q.id) && (!input.questionId || q.id === input.questionId));
+      }
+      const picked = selectQuestions(eligible, input.questionId ? 1 : input.mode === 'endless' ? 1 : input.count, random);
+      if (!picked.length) throw new PlayError('EMPTY_BANK', source === 'wrong' ? '지금 복습할 오답이 없어요. 다시 맞힌 문제는 목록에서 빠져요.' : source === 'bookmarks' ? '지금 풀 수 있는 북마크 문제가 없어요.' : '이 조건의 문제가 아직 없어요. 주제나 난이도를 전체로 바꿔보세요.', 409);
+      await client.query('INSERT INTO quizquiz.play_sessions(id,user_id,category,difficulty,mode,source) VALUES($1,$2,$3,$4,$5,$6)', [input.requestId, userId, input.category, input.difficulty, input.mode ?? 'standard', source]);
       for (const [position, q] of picked.entries()) await appendQuestion(client, input.requestId, position, q);
       return readSession(client, userId, input.requestId);
     });
   }
+  private async startDaily(client: PoolClient, userId: string, requestId: string) {
+    const day: string = (await client.query("SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Seoul')::date::text AS day")).rows[0].day;
+    const existing = await client.query('SELECT id FROM quizquiz.play_sessions WHERE user_id=$1 AND daily_day=$2', [userId, day]);
+    if (existing.rowCount) return readSession(client, userId, existing.rows[0].id);
+    // Serialize creation across users and app instances; the whole set commits atomically.
+    await client.query('SELECT pg_advisory_xact_lock(187303, hashtext($1))', [day]);
+    const set = await client.query('SELECT day FROM quizquiz.daily_sets WHERE day=$1', [day]);
+    if (!set.rowCount) {
+      const bank = await candidates(client, '', 'all', 'all');
+      const picked = selectQuestions(bank.rows, 5, random);
+      if (picked.length !== 5) throw new PlayError('EMPTY_DAILY', '오늘의 5문제를 준비 중이에요. 잠시 후 다시 와주세요.', 409);
+      await client.query('INSERT INTO quizquiz.daily_sets(day) VALUES($1)', [day]);
+      for (const [position, q] of picked.entries()) await client.query(`INSERT INTO quizquiz.daily_items
+        (day,position,question_id,category,difficulty,question,options,correct_answer_index,explanation,sources)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, [day, position, q.id, q.category, q.difficulty, q.question, q.options, q.correct_answer_index, q.explanation, JSON.stringify(q.sources)]);
+    }
+    const items = await client.query<BankRow>(`SELECT d.*, d.question_id AS id, NULL AS "lastSeen"
+      FROM quizquiz.daily_items d JOIN quizquiz.bank_questions b ON b.id=d.question_id
+      WHERE d.day=$1 AND b.status='published' ORDER BY d.position FOR SHARE OF b`, [day]);
+    if (items.rows.length !== 5) throw new PlayError('EMPTY_DAILY', '오늘의 문제를 다시 검토 중이에요. 다른 모드로 먼저 풀어주세요.', 409);
+    await client.query(`INSERT INTO quizquiz.play_sessions(id,user_id,category,difficulty,mode,source,daily_day)
+      VALUES($1,$2,'all','all','standard','daily',$3)`, [requestId, userId, day]);
+    for (const [position, q] of items.rows.entries()) await appendQuestion(client, requestId, position, q);
+    return readSession(client, userId, requestId);
+  }
+  async bookmark(userId: string, questionId: string, saved: boolean) {
+    await this.transaction(async client => {
+      if (saved) {
+        await this.lockAnswered(client, userId, questionId);
+        await client.query('INSERT INTO quizquiz.question_bookmarks(user_id,question_id) VALUES($1,$2) ON CONFLICT DO NOTHING', [userId, questionId]);
+      } else {
+        await client.query('DELETE FROM quizquiz.question_bookmarks WHERE user_id=$1 AND question_id=$2', [userId, questionId]);
+      }
+    });
+  }
+  dashboard(userId: string) { return readDashboard(this.pool, userId); }
+  collection(userId: string, source: 'wrong' | 'bookmarks', page: number) { return readCollection(this.pool, userId, source, page); }
   async get(userId: string, id: string) {
     return this.transaction(async client => {
       await client.query('SELECT id FROM quizquiz.play_sessions WHERE id=$1 AND user_id=$2 FOR SHARE', [id, userId]);
@@ -115,7 +163,7 @@ export class PostgresPlayRepository implements PlayRepository {
       }
       if (session.rows[0].completed_at) throw new PlayError('FINISHED', '이미 종료한 풀이예요.', 409);
       if (result.rows.find(i => i.selected_index === null)?.position !== position) throw new PlayError('OUT_OF_ORDER', '현재 문제부터 풀어주세요.', 409);
-      await client.query('UPDATE quizquiz.play_items SET selected_index=$3, answered_at=now() WHERE session_id=$1 AND position=$2', [id, position, answerIndex]);
+      await client.query('UPDATE quizquiz.play_items SET selected_index=$3, answered_at=clock_timestamp() WHERE session_id=$1 AND position=$2', [id, position, answerIndex]);
       await client.query(`UPDATE quizquiz.play_sessions SET completed_at=now() WHERE id=$1 AND mode='standard'
         AND NOT EXISTS(SELECT 1 FROM quizquiz.play_items WHERE session_id=$1 AND selected_index IS NULL)`, [id]);
       return readSession(client, userId, id);
@@ -160,7 +208,7 @@ export class PostgresPlayRepository implements PlayRepository {
     if (!question.rowCount) throw missing();
     const played = await client.query(`SELECT 1 FROM quizquiz.play_items i JOIN quizquiz.play_sessions s ON s.id=i.session_id
       WHERE s.user_id=$1 AND i.question_id=$2 AND i.answered_at IS NOT NULL LIMIT 1`, [userId, questionId]);
-    if (!played.rowCount) throw new PlayError('ANSWER_REQUIRED', '직접 답을 제출한 문제만 평가하거나 신고할 수 있어요.', 403);
+    if (!played.rowCount) throw new PlayError('ANSWER_REQUIRED', '직접 답을 제출한 문제만 저장하거나 평가·신고할 수 있어요.', 403);
   }
   async rate(userId: string, questionId: string, rating: Rating) {
     await this.transaction(async client => {
@@ -181,11 +229,11 @@ export class PostgresPlayRepository implements PlayRepository {
     });
   }
   async history(userId: string): Promise<PlayHistory[]> {
-    const result = await this.pool.query(`SELECT s.id, s.created_at, s.mode, s.completed_at, count(*)::int AS count,
+    const result = await this.pool.query(`SELECT s.id, s.created_at, s.mode, s.source, s.daily_day::text, s.completed_at, count(*)::int AS count,
       count(i.answered_at)::int AS answered, count(*) FILTER(WHERE i.selected_index=i.correct_answer_index)::int AS score
       FROM quizquiz.play_sessions s JOIN quizquiz.play_items i ON i.session_id=s.id
       WHERE s.user_id=$1 GROUP BY s.id ORDER BY s.created_at DESC LIMIT 30`, [userId]);
-    return result.rows.map(r => ({ id: r.id, createdAt: r.created_at.toISOString(), count: r.count, answered: r.answered, score: r.score, mode: r.mode, completed: !!r.completed_at }));
+    return result.rows.map(r => ({ id: r.id, createdAt: r.created_at.toISOString(), count: r.count, answered: r.answered, score: r.score, mode: r.mode, completed: !!r.completed_at, source: r.source, dailyDay: r.daily_day }));
   }
 }
 export const getPlayRepository = (): PlayRepository => new PostgresPlayRepository(getDatabasePool());

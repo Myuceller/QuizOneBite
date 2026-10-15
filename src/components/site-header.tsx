@@ -8,7 +8,7 @@ export async function SiteHeader() {
   return <header className="site-header">
     <Logo />
     <nav className="header-nav" aria-label="주 메뉴">
-      {user ? <><Link href="/">퀴즈 풀기</Link><Link href="/play/history">풀이 기록</Link><LogoutButton /></> : <><Link href="/login">로그인</Link><Link className="nav-signup" href="/signup">시작하기</Link></>}
+      {user ? <><Link href="/">퀴즈 풀기</Link><Link href="/play/history">풀이 기록</Link><Link href="/play/learning">나의 상식</Link><LogoutButton /></> : <><Link href="/login">로그인</Link><Link className="nav-signup" href="/signup">시작하기</Link></>}
     </nav>
   </header>;
 }

@@ -69,3 +69,7 @@ flowchart LR
 - 출처 검토·중복 확인을 거쳐 문제 수 확장, 실제 정답률로 난이도 보정.
 - 이메일 인증·비밀번호 복구, 다중 계정 평가 조작 대응.
 - 운영 DB 백업·복구와 운영 환경 출시. 현재 무료 staging의 DB 만료 기한 관리.
+
+## 개인 학습과 일일 문제
+
+`/play/learning`은 개인 성적·최근 30일 일일 참여를, `/play/collection?source=wrong|bookmarks`는 페이지 단위 복습 목록을 보여준다. `learning-actions.tsx`가 시작·북마크 요청 상태를, `learning-hub.tsx`가 홈 학습 카드를 담당한다. `PlayRepository`의 `dashboard`, `collection`, `bookmark` 계약과 PostgreSQL `learning-queries.ts`를 통해 사용자별 데이터를 조회·저장한다. 공통 일일 문제 생성·사용자별 세션 생성은 기존 저장소 트랜잭션 안에서 처리한다. 정책은 [문제 은행 문서](../quiz/bank.md#오답-복습북마크성적오늘의-5문제)에 있다.

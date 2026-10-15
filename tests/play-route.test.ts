@@ -6,8 +6,9 @@ import { POST as rate } from '@/app/api/questions/[id]/rating/route';
 import { POST as report } from '@/app/api/questions/[id]/report/route';
 import { GET } from '@/app/api/play/[id]/route';
 import { POST as next } from '@/app/api/play/[id]/next/route';
+import { POST as bookmark } from '@/app/api/questions/[id]/bookmark/route';
 import { POST as finish } from '@/app/api/play/[id]/finish/route';
-const { session, quota, repo } = vi.hoisted(() => ({ session: vi.fn(), quota: vi.fn(), repo: { start: vi.fn(), answer: vi.fn(), next: vi.fn(), finish: vi.fn(), rate: vi.fn(), report: vi.fn(), get: vi.fn() } }));
+const { session, quota, repo } = vi.hoisted(() => ({ session: vi.fn(), quota: vi.fn(), repo: { bookmark: vi.fn(), start: vi.fn(), answer: vi.fn(), next: vi.fn(), finish: vi.fn(), rate: vi.fn(), report: vi.fn(), get: vi.fn() } }));
 vi.mock('@/server/auth', () => ({ getAuth: () => ({ api: { getSession: session } }) }));
 vi.mock('@/server/db/play-repository', () => ({ getPlayRepository: () => repo, consumePlayQuota: quota }));
 const id = randomUUID();
@@ -18,7 +19,7 @@ afterEach(() => vi.unstubAllEnvs());
 describe('play API boundary', () => {
   it('requires authentication for every endpoint', async () => {
     session.mockResolvedValue(null);
-    for (const response of [await POST(request({})), await answer(request({}),params), await next(request({}),params), await finish(request({}),params), await rate(request({}),params), await report(request({}),params), await GET(new Request('https://quiz.example/api/play/'+id),params)]) expect(response.status).toBe(401);
+    for (const response of [await POST(request({})), await answer(request({}),params), await next(request({}),params), await finish(request({}),params), await bookmark(request({}),params), await rate(request({}),params), await report(request({}),params), await GET(new Request('https://quiz.example/api/play/'+id),params)]) expect(response.status).toBe(401);
     expect(repo.start).not.toHaveBeenCalled();
   });
   it('rejects cross-site and originless mutations before accessing storage', async () => {
@@ -62,5 +63,21 @@ describe('play API boundary', () => {
     expect((await finish(request({},'https://evil.example'),params)).status).toBe(403);
     quota.mockResolvedValue(false);
     expect((await next(request({ position: 0 }),params)).status).toBe(429);
+  });
+});
+
+describe('learning API boundaries', () => {
+  it('validates source combinations and preserves server identity for bookmarks', async () => {
+    expect((await POST(request({ requestId: id, source: 'daily', mode: 'endless' }))).status).toBe(400);
+    expect((await POST(request({ requestId: id, source: 'standard', questionId: id }))).status).toBe(400);
+    expect((await POST(request({ requestId: id, source: 'daily', dailyDay: '2020-01-01' }))).status).toBe(400);
+    expect((await POST(request({ requestId: id, source: 'wrong', questionId: id }))).status).toBe(200);
+    expect((await bookmark(request({ saved: true, userId: 'other' }),params)).status).toBe(400);
+    expect((await bookmark(request({ saved: 'true' }),params)).status).toBe(400);
+    expect((await bookmark(request({ saved: true }, 'https://evil.example'),params)).status).toBe(403);
+    expect((await bookmark(request({ saved: true }),params)).status).toBe(200);
+    expect(repo.bookmark).toHaveBeenCalledWith('owner',id,true);
+    quota.mockResolvedValue(false);
+    expect((await bookmark(request({ saved: false }),params)).status).toBe(429);
   });
 });

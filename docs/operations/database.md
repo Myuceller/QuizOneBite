@@ -113,3 +113,5 @@ erDiagram
 ## 직접 운영하는 PostgreSQL 방향 (2026-10-07)
 
 사용자 결정에 따라 Supabase로 이전하지 않고 PostgreSQL을 직접 관리하는 방향으로 정했다. 현재 로컬은 Docker PostgreSQL이며, 배포된 앱은 아직 기존 Render PostgreSQL을 사용한다. 직접 운영할 호스트·영구 디스크·외부 연결 제한·백업과 복구·업데이트 정책은 다음 DB 이전 작업에서 확정한다. 무료 앱 컨테이너의 임시 파일시스템에 DB를 함께 올리지는 않는다. 이번 문제 제출 기능 작업은 원격 DB 호스팅을 바꾸지 않는다.
+
+`0009_learning_features.sql`은 `question_bookmarks`, `daily_sets`, `daily_items`를 추가한다. `play_sessions.source/daily_day`로 일일·복습 세션을 구분하며 사용자·날짜별 일일 세션을 유일하게 제한한다. `play_items.category`는 기존 기록을 은행 분야로 채운 뒤 새 풀이의 분야를 보존한다. 적용 전에 기존 DB를 초기화하거나 문제를 재삽입할 필요는 없다.

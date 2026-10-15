@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { LearningHub } from "@/features/play/components/learning-hub";
+import { getPlayRepository } from "@/server/db/play-repository";
 import { PlayLauncher } from "@/features/play/components/play-launcher";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
@@ -6,6 +8,7 @@ import { getCurrentUser } from "@/server/auth/session";
 
 export default async function HomePage() {
   const user = await getCurrentUser();
+  const dashboard = user ? await getPlayRepository().dashboard(user.id) : null;
   return (
     <main className="app-shell">
       <SiteHeader />
@@ -28,6 +31,7 @@ export default async function HomePage() {
       </section>
 
       {!user && <div className="join-banner"><div><strong>함께 고르는 좋은 문제.</strong><p>풀고, 해설을 읽고, 마음에 든 문제에 한 표를 남겨요.</p></div><Link href="/signup">무료로 시작하기 <span aria-hidden="true">→</span></Link></div>}
+      {dashboard && <LearningHub dashboard={dashboard} />}
       <PlayLauncher signedIn={!!user} />
 
       <div className="play-links"><Link href="/submit">내가 아는 상식으로 문제 제안하기 →</Link></div>
