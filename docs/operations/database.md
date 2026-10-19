@@ -117,3 +117,5 @@ erDiagram
 `0009_learning_features.sql`은 `question_bookmarks`, `daily_sets`, `daily_items`를 추가한다. `play_sessions.source/daily_day`로 일일·복습 세션을 구분하며 사용자·날짜별 일일 세션을 유일하게 제한한다. `play_items.category`는 기존 기록을 은행 분야로 채운 뒤 새 풀이의 분야를 보존한다. 적용 전에 기존 DB를 초기화하거나 문제를 재삽입할 필요는 없다.
 
 `0010_question_images.sql`은 문제 은행·플레이·일일 문제에 선택적 `image` JSONB와 검증 제약을 추가한다. 질문 중복 인덱스는 정규화한 질문과 이미지 경로의 조합으로 교체한다. 기존 행은 이미지가 없는 상태로 유지되며 기존 풀이를 다시 작성하지 않는다. 이미지 파일을 포함한 앱 배포가 완료된 뒤 검수된 이미지 문항을 별도로 게시한다.
+
+`0011_question_image_webp.sql`은 이미지 검증 함수를 교체해 기존 SVG와 검수된 WebP를 모두 허용한다. 기존 열·행·인덱스·풀이 스냅샷은 변경하지 않는다. 앱과 자산 배포를 먼저 완료하고, 검수한 새 문항 ID를 별도 트랜잭션으로 게시한다.

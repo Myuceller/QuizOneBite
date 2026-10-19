@@ -139,7 +139,7 @@ describe("PostgreSQL persistence", () => {
     await command("seed");
     await command("seed");
     const migrations = await pool.query("SELECT count(*)::int AS count FROM quizquiz.schema_migrations");
-    expect(migrations.rows[0].count).toBe(10);
+    expect(migrations.rows[0].count).toBe(11);
     const sample = await repository.findById("98c2d9a0-6990-4d57-8c81-b31704315a48");
     expect(sample?.questions).toHaveLength(3);
     expect(sample?.metadata.verificationStatus).toBe("unreviewed");
@@ -671,7 +671,7 @@ describe('learning collections, statistics and daily quizzes', () => {
 
 describe('image question snapshots', () => {
   const illustration = { src: `/quiz-images/${'a'.repeat(32)}.svg`, alt: '세 가지 색의 세로 띠가 있는 국기', width: 600, height: 400 };
-  const second = { ...illustration, src: `/quiz-images/${'b'.repeat(32)}.svg` };
+  const second = { ...illustration, src: `/quiz-images/${'b'.repeat(32)}.webp` };
   async function user() {
     const id = randomUUID();
     await pool.query('INSERT INTO public.auth_user(id,name,email,"emailVerified","createdAt","updatedAt") VALUES($1,$2,$3,false,now(),now())', [id, 'Image tester', `${id}@example.test`]);return id;
@@ -685,7 +685,7 @@ describe('image question snapshots', () => {
     await fixture(prompt, illustration); await fixture(prompt, second);
     await expect(fixture(prompt, illustration)).rejects.toMatchObject({code:'23505'});
     await fixture(prompt, null); await expect(fixture(prompt, null)).rejects.toMatchObject({code:'23505'});
-    for (const image of [{...illustration,src:'https://example.com/it.svg'},{...illustration,alt:''},{...illustration,answer:'A'},{...illustration,width:0}]) await expect(fixture(randomUUID(),image)).rejects.toMatchObject({code:'23514'});
+    for (const image of [{...illustration,src:'https://example.com/it.svg'},{...illustration,src:second.src+'?answer=A'},{...illustration,src:second.src.replace('.webp','.html')},{...illustration,alt:''},{...illustration,answer:'A'},{...illustration,width:0}]) await expect(fixture(randomUUID(),image)).rejects.toMatchObject({code:'23514'});
   });
   it('preserves illustration through grading, reload, collections and review without leaking answers', async () => {
     const owner = await user(), play = new PostgresPlayRepository(pool), id = await fixture(`Visual fixture ${randomUUID()}`, illustration);
